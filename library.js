@@ -5,6 +5,7 @@
 // Stats, relations, thoughts, chronicle, events, arc, clock, scenes, cleaner, card creation, commands.
 // ============================================================================
 const LW = (() => {
+  const VERSION = "1.0.0";                                    // shown by /check; bump it on every published update
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const num = (v, d) => { const n = parseFloat(v); return isNaN(n) ? d : n; };
   const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -764,7 +765,7 @@ const LW = (() => {
     if (pc.cmd === "check") {
       const cfgCards = (storyCards || []).filter((c) => c && String(c.type || "").toLowerCase() === "config").length;
       const d = L.dbg;
-      return "Characters " + X.roster.length + ". Config cards " + cfgCards + ". Relations cards " + X.relCards.length + ", ties " + Object.keys(X.ties).length +
+      return "LW Affinity Engine " + VERSION + ". Characters " + X.roster.length + ". Config cards " + cfgCards + ". Relations cards " + X.relCards.length + ", ties " + Object.keys(X.ties).length +
         (X.tieWarn.length ? " (" + X.tieWarn.length + " unresolved)" : "") + ". Inject: " + X.cfg.s.inject + ". Events " + X.ev.length + ", arc beats " + X.arc.beats.length + (X.arc.beats.length ? " (act " + L.w.act + " of " + X.arc.maxAct + ")" : "") +
         ", Chronicle card " + (chrCard() ? "yes" : "no") + ", unreadable conditions " + countBadConds(X, L) + ". " +
         (d ? "Last context (action " + d.turn + "): " + d.chars + " chars, " + d.stripped + " hidden marker(s) removed, injected line found: " + (d.injected ? "yes" : "no") + "." +
