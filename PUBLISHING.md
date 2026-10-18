@@ -14,7 +14,7 @@ Desde el parche 2.39.0 (agosto de 2026), AI Dungeon tiene **Scripts como conteni
 4. **Marca el escenario como Script.**
 5. **Portada:** una imagen que represente vínculos, recuerdos o hilos entre personajes.
 6. **Publica.** Los escenarios pasan por la moderación automática antes de publicarse.
-7. **Pruébalo como jugador:** en una partida cualquiera (por ejemplo, un escenario ajeno con tarjetas de personaje), añade el Script, juega una acción y escribe `/check`. Debe decir `LW Affinity Engine` y la versión (ahora `1.0.2`) y el número de personajes que ha encontrado.
+7. **Pruébalo como jugador:** en una partida cualquiera (por ejemplo, un escenario ajeno con tarjetas de personaje), añade el Script, juega una acción y escribe `/check`. Debe decir `LW Affinity Engine` y la versión (ahora `1.1.0`) y el número de personajes que ha encontrado.
 
 ### Al actualizar
 1. Sube el número en `const VERSION = "1.0.0"` (línea 8 de `library.js`): `1.0.1` para arreglos, `1.1.0` para funciones nuevas.
@@ -57,10 +57,11 @@ COMMANDS (type them in Do, Say or Story)
 
 TIPS
 • Keep your own character out: add "skip: YourName" to the LW Config card.
-• A yandere: put [cfg obsession:0.3] in that character's card Notes.
+• Choose your own yandere: put [cfg obsession:0.3] in that character's card Notes. No surprise yanderes: add "yandere_chance: 0" to LW Config.
 • Using another script that also writes Front Memory? Add "inject: text" to LW Config.
 
-WHAT'S NEW IN 1.0.2
+WHAT'S NEW IN 1.1.0
+• Secret yanderes: any character you meet might become quietly, dangerously obsessed with you. One per adventure at most, never announced.
 • Commands now work in Do and Say mode, not only in Story mode.
 • Cards made with /npc, /place and /faction get a proper title, no repeated name, and no lone title like "Lady" or "Captain" as a trigger.
 

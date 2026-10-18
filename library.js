@@ -5,7 +5,7 @@
 // Stats, relations, thoughts, chronicle, events, arc, clock, scenes, cleaner, card creation, commands.
 // ============================================================================
 const LW = (() => {
-  const VERSION = "1.0.2";                                    // shown by /check; bump it on every published update
+  const VERSION = "1.1.0";                                    // shown by /check; bump it on every published update
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const num = (v, d) => { const n = parseFloat(v); return isNaN(n) ? d : n; };
   const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -52,6 +52,8 @@ const LW = (() => {
       twists: true, twist_gap: 8, twist_chance: 25, twist_hold: 3,
       // bonds: the first time two characters with no written tie share a scene, bond_chance % of drawing one from the Relations deck
       bonds: true, bond_chance: 70,
+      // secret yanderes: each new character has yandere_chance % of an obsession that grows on its own (at most yandere_max)
+      yandere_chance: 20, yandere_max: 1,
       // suggest_cards: a name with no card that comes up in suggest_after different turns gets a one-time hint to /npc it
       suggest_cards: true, suggest_after: 3,
       // mood: auto stats rise after a positive interaction and fall after a negative one (stats flagged steady always rise)
@@ -399,6 +401,15 @@ const LW = (() => {
     return m ? m[0] : "";
   };
 
+  // a secret yandere: the first time the engine meets a character, yandere_chance % of a hidden obsession rate
+  // (only for a steady stat with no rate of its own, like the default obsession; never for romance:no characters)
+  const rollYandere = (X, L, ch, r) => {
+    const s = X.cfg.s, d = X.cfg.stats.find((x) => x.steady && x.mode === "auto" && !x.rate);
+    if (!d || !(s.yandere_chance > 0) || romanceOff(ch) || ch.cfg.vals[d.name] != null) return;
+    if (Object.keys(L.rel).filter((k) => L.rel[k].yr).length >= s.yandere_max) return;
+    const R = rng(hashStr("y:" + ch.id + ":" + L.w.seed));
+    if (R() * 100 < s.yandere_chance) r.yr = Math.round((0.2 + R() * 0.2) * 100) / 100;
+  };
   const sync = (X, L) => {
     for (const ch of X.roster) {
       let r = L.rel[ch.id];
@@ -406,6 +417,7 @@ const LW = (() => {
       if (!r) {
         r = L.rel[ch.id] = fresh(X, ch);
         if (blk) adopt(X, ch, r, blk);
+        rollYandere(X, L, ch, r);
       } else {
         for (const d of activeStats(X, ch)) if (r.s[d.name] == null) r.s[d.name] = startOf(d, ch);
         if (!r.th) { r.th = []; r.lastT = -999; r.tsig = ""; r.bi = 0; }
@@ -1902,7 +1914,7 @@ const LW = (() => {
       const snapshot = clone(r.s);
       const mood = moodOf(X, ch, moodText, found.find((f) => f.ch.id === id));
       for (const d of activeStats(X, ch)) {
-        const rate = rateOf(d, ch);
+        const rate = rateOf(d, ch) || (d.steady && r.yr) || 0;     // r.yr: a secret yandere's obsession rate
         if (d.mode !== "auto" || rate <= 0) continue;
         const f = X.cfg.s.mood && !d.steady ? mood : 1;
         if (!f) continue;

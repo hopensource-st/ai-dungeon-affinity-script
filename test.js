@@ -224,4 +224,13 @@ assert(cv.title === "Lady Corvina Ashe" && /^Lady Corvina Ashe, a widowed/.test(
 assert(!cv.keys.split(", ").includes("Lady") && cv.keys.split(", ")[0] === "Corvina", "no bare title trigger: " + cv.keys);
 assert(/Corvina:/.test(run("input", "/rels").text), "tracked as Corvina, not Lady");
 
+// secret yanderes: a new character may get a hidden obsession that grows however they are treated
+cfg.description += "\nyandere_chance: 100\nyandere_max: 5";
+storyCards.push({ id: 201, keys: "Selene", entry: "Selene, a quiet librarian.", type: "character", title: "Selene", description: "" });
+storyCards.push({ id: 202, keys: "Oswin", entry: "Oswin, the protagonist's father.", type: "character", title: "Oswin", description: "[cfg romance:no]" });
+for (let i = 0; i < 6; i++) turn("I mock Selene and Oswin.", "Selene and Oswin glare at you, round " + i + ".");
+const rSel = G.state.lw.rel["201"], rOsw = G.state.lw.rel["202"];
+assert(rSel.yr >= 0.2 && rSel.yr <= 0.4 && rSel.s.obsession > 1, "secret yandere grows even when mocked: " + JSON.stringify(rSel));
+assert(!rOsw.yr && rOsw.s.obsession === 0, "romance:no characters are never yanderes");
+
 console.log("ok");

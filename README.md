@@ -55,6 +55,7 @@ Cards are never created on their own. When the AI keeps using a name that has no
 Optional. Put a `[cfg ...]` line in the character card's Notes:
 
 - `affinity:0.4` growth per scene of an auto stat (any stat name works). For manual stats, the starting value.
+- **Secret yanderes:** the first time the engine meets a character, there is a `yandere_chance: 20` % chance that their obsession starts growing on its own, at a hidden rate, however they are treated (at most `yandere_max: 1` per adventure; never for `romance:no` characters or cards that set their own obsession). Nothing announces it: you find out when they start acting on it. `yandere_chance: 0` turns it off.
 - `obsession:0.3` makes this character a yandere: obsession (0 and silent for everyone else) rises by this much every scene with the protagonist, however they are treated.
 - `start.trust:6` starting value.
 - `romance:no` no attraction stat for this character.
