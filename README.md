@@ -36,7 +36,7 @@ The engine creates five cards of its own. Their triggers (`lw_config`, ...) neve
 | **LW Events** | The twist deck (see below). |
 | **LW Arc** | A generic three-act arc with random beats. |
 
-Then, on your first action, **the AI designs the stats for this story** (fear and debt in a horror story, respect and rivalry in a sports drama...) and writes them into LW Config. The reply only says they are ready, so you can discover them by playing; press Continue to go on. Not happy with the draw? `/autostats` designs a new set. Scenario authors who write their own Config card keep their stats: autodesign only runs with `autostats: on`.
+Then, on your first action, **the AI adds one or two stats made for this story** (fear in a horror story, greed in a pirate tale, rivalry in a sports drama...) next to the four that are always there: affinity, trust, attraction and obsession. The reply only says they are ready, so you can discover them by playing; press Continue to go on. Not happy with the draw? `/autostats` replaces them with new ones (the four fixed stats, flagged `keep`, never change). Scenario authors who write their own Config card keep their stats: autodesign only runs with `autostats: on`.
 
 ## Which characters it tracks
 

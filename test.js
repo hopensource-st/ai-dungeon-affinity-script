@@ -41,10 +41,12 @@ const design = turn("You walk into the inn.",
   "stages: affinity | 0=cold to the protagonist | 5=warm to the protagonist\nstages: suspicion | 0= | 5=suspects the protagonist\nstat: bad name! | auto");
 for (const t of ["config", "relations", "chronicle"]) assert(storyCards.some((c) => c.type === t), "auto card " + t);
 const cfgText = storyCards.find((c) => c.type === "config").description;
-assert(/^stat: suspicion \| manual/m.test(cfgText) && !/stat: trust/.test(cfgText), "designed stats replace defaults:\n" + cfgText);
+assert(/^stat: suspicion \| manual/m.test(cfgText) && /^stat: trust /m.test(cfgText) && /^stat: attraction /m.test(cfgText), "designed stats join the defaults:\n" + cfgText);
+assert((cfgText.match(/^stat: affinity /gm) || []).length === 1, "AI copy of a kept stat ignored");
+assert(cfgText.indexOf("stat: suspicion") < cfgText.indexOf("max_present:"), "new stats sit with the others");
 assert(/^stat: obsession | auto .*| steady | keep$/m.test(cfgText) && /^stages: obsession/m.test(cfgText), "obsession kept through autostats");
 assert(/^autostats: off$/m.test(cfgText) && /^tension_stat: affinity$/m.test(cfgText), "autostats turned off, tension follows");
-assert(/stats for this story are ready/.test(design) && !/suspicion/.test(design), "design stays a surprise: " + design);
+assert(/new stats for this story are ready/.test(design) && !/suspicion/.test(design), "design stays a surprise: " + design);
 assert(G.history[0].text === "You walk into the inn.", "player action kept");
 turn("I sit at the bar.", "Mira smiles at you from behind the bar. \"Welcome, traveler.\"");
 assert(/<<LW\naffinity: /.test(storyCards[0].description), "Mira got a stat block in Notes");

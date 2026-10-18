@@ -22,10 +22,10 @@ const LW = (() => {
   // ---- defaults (used when there is no Config card) ------------------------
   const DEF = {
     stats: [
-      { name: "affinity", mode: "auto", min: 0, max: 10, start: 1, rate: 0.2, damp: false, romance: false, needs: null },
-      { name: "trust", mode: "auto", min: 0, max: 10, start: 3, rate: 0.1, damp: false, romance: false, needs: null },
+      { name: "affinity", mode: "auto", min: 0, max: 10, start: 1, rate: 0.2, damp: false, romance: false, needs: null, keep: true },
+      { name: "trust", mode: "auto", min: 0, max: 10, start: 3, rate: 0.1, damp: false, romance: false, needs: null, keep: true },
       { name: "attraction", mode: "auto", min: 0, max: 10, start: 0, rate: 0.1, damp: false, romance: true,
-        needs: { stat: "trust", op: ">=", val: 4 } },
+        needs: { stat: "trust", op: ">=", val: 4 }, keep: true },
       // obsession stays at 0 unless a card asks for it ([cfg obsession:0.3]); then it rises whenever they meet (yandere)
       { name: "obsession", mode: "auto", min: 0, max: 10, start: 0, rate: 0, damp: false, romance: false, needs: null, steady: true, keep: true },
     ],
@@ -1414,12 +1414,12 @@ const LW = (() => {
   // ---- autostats: the AI designs the stats for this story ------------------------
   const statsReq = (X) => ({ kind: "stats", name: "stats", done: false, doneTurn: -1,
     instr: "[Out of character: before the story goes on, design how the characters' feelings toward the protagonist are measured in THIS story. " +
-      "Reply with nothing but 2 to 4 lines like\nstat: name | auto | 0-10 | start N | rate N\nthen, for each stat, one line like\n" +
+      "Reply with nothing but 1 or 2 lines like\nstat: name | auto | 0-10 | start N | rate N\nthen, for each stat, one line like\n" +
       "stages: name | 0=text | 3=text | 6=text | 9=text\nRules: one lowercase word per name that fits this story's genre and themes " +
       "(for example loyalty, fear, desire, respect, suspicion, debt); start 0 to 5; rate 0.1 to 0.3; after rate you may add: steady " +
       "(always grows while they are together, for compulsions or curses), romance (romantic feelings), needs otherstat>=N. Each stage text is a " +
       "short phrase about the character's attitude toward the protagonist; 0= may be empty. Be inventive: surprise the player." +
-      (X.cfg.stats.some((d) => d.keep) ? " Do not include " + X.cfg.stats.filter((d) => d.keep).map((d) => d.name).join(" or ") + ": it already exists." : "") + "]" });
+      (X.cfg.stats.some((d) => d.keep) ? " These already exist, so add new ones beside them and do not repeat them: " + X.cfg.stats.filter((d) => d.keep).map((d) => d.name).join(", ") + "." : "") + "]" });
 
   // rewrite the stat and stages lines of the Config card, and set some keys
   const writeCfg = (statLines, sets, keep) => {
@@ -1427,15 +1427,16 @@ const LW = (() => {
     if (!c) return;
     const f = typeof c.description === "string" && (c.description.trim() || !String(c.entry || "").trim()) ? "description" : "entry";
     const out = [], done = {};
-    let at = -1;
+    let at = -1, last = -1;
     for (const l of String(c[f] || "").split("\n")) {
       const m = l.match(/^\s*(stat|stages)\s*:\s*([^|]*)/i);
       const nm = m ? m[2].trim().toLowerCase() : "";
       if (m && !(m[1].toLowerCase() === "stages" && nm === "tension") && !(keep || []).includes(nm)) { if (at < 0) at = out.length; continue; }
+      if (m && at < 0) last = out.length + 1;                // new stats go right after the kept ones
       const k = ((l.match(/^\s*(\w+)\s*:/) || [])[1] || "").toLowerCase();
       if (sets[k] != null) { out.push(k + ": " + sets[k]); done[k] = 1; } else out.push(l);
     }
-    out.splice(at < 0 ? out.length : at, 0, ...statLines);
+    out.splice(at >= 0 ? at : last >= 0 ? last : out.length, 0, ...statLines);
     for (const k of Object.keys(sets)) if (!done[k]) out.push(k + ": " + sets[k]);
     const text = out.join("\n");
     if (f === "description") c.description = text;
@@ -1453,7 +1454,7 @@ const LW = (() => {
       if (!/^[a-z][a-z_]{1,19}$/.test(name) || name === "tension" || kept.includes(name)) continue;
       const line = m[1].toLowerCase() + ": " + [name].concat(p.slice(1).map((x) => x.trim())).join(" | ");
       if (m[1].toLowerCase() === "stages") stages.push({ name, line });
-      else if (stats.length < 5 && !stats.some((s) => s.name === name)) stats.push({ name, line, auto: /^auto$/i.test((p[1] || "").trim()) });
+      else if (stats.length < 3 && !stats.some((s) => s.name === name)) stats.push({ name, line, auto: /^auto$/i.test((p[1] || "").trim()) });
     }
     if (!stats.length) {
       writeCfg([], { autostats: "off" }, kept);
@@ -1461,8 +1462,9 @@ const LW = (() => {
     }
     const names = stats.map((s) => s.name), auto = stats.filter((s) => s.auto).map((s) => s.name);
     writeCfg(stats.map((s) => s.line).concat(stages.filter((s) => names.includes(s.name)).map((s) => s.line)),
-      { tension_stat: auto[0] || names[0], chronicle_stats: (auto.length ? auto : names).concat(kept).join("|"), autostats: "off" }, kept);
-    return "[LW: The " + stats.length + " stats for this story are ready. They stay a surprise; look at the LW Config card if you want to know. Press Continue.]";
+      { tension_stat: kept.includes(X.cfg.s.tension_stat) ? X.cfg.s.tension_stat : auto[0] || names[0],
+        chronicle_stats: kept.filter((k) => String(X.cfg.s.chronicle_stats).split("|").includes(k)).concat(auto).join("|"), autostats: "off" }, kept);
+    return "[LW: The " + stats.length + " new stats for this story are ready. They stay a surprise; look at the LW Config card if you want to know. Press Continue.]";
   };
 
   const handleCreate = (X, L, body, turn) => {
