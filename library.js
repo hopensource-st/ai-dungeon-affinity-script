@@ -5,7 +5,7 @@
 // Stats, relations, thoughts, chronicle, events, arc, clock, scenes, cleaner, card creation, commands.
 // ============================================================================
 const LW = (() => {
-  const VERSION = "1.0.0";                                    // shown by /check; bump it on every published update
+  const VERSION = "1.0.1";                                    // shown by /check; bump it on every published update
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const num = (v, d) => { const n = parseFloat(v); return isNaN(n) ? d : n; };
   const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -686,7 +686,7 @@ const LW = (() => {
   };
 
   const parseCmd = (X, text) => {
-    const m = text.match(/(^|\s)\/(\w+)/);
+    const m = text.match(/(^|[\s"“])\/(\w+)/);
     if (!m) return null;
     const cmd0 = m[2].toLowerCase();
     const cmdStat = resolveStat(X, cmd0);
@@ -1541,11 +1541,12 @@ const LW = (() => {
   // ---- world commands -------------------------------------------------------------
   const WCMDS = ["flag", "unflag", "flags", "log", "canon", "chronicle", "event", "events", "arc", "scene", "time", "day", "thoughts", "think", "npc", "faction", "place", "autostats", "twist", "twists"];
   const parseW = (text) => {
-    const m = text.match(/(^|\s)\/(\w+)([^\n]*)/);
+    const m = text.match(/(^|[\s"“])\/(\w+)([^\n]*)/);
     if (!m) return null;
     const cmd = m[2].toLowerCase();
     if (!WCMDS.includes(cmd)) return null;
-    return { cmd, arg: m[3].trim(), start: m.index + m[1].length, end: m.index + m[0].length };
+    // Do mode sends "> You /arc." and Say mode '> You say "/arc."': the closing period and quotes are not part of the command
+    return { cmd, arg: m[3].replace(/["“”]/g, "").replace(/[\s.!?]+$/, "").trim(), start: m.index + m[1].length, end: m.index + m[0].length };
   };
   const arcStatus = (X, L) => {
     const A = X.arc, W = L.w;
@@ -1751,7 +1752,9 @@ const LW = (() => {
     let out = text;
     if (pc || w) {
       const mark = "[LW: " + String(note).replace(/\]/g, ")") + "]";
-      out = createNow ? mark : rest.replace(/[\s.!?,;:]/g, "") ? rest + " " + mark : mark;
+      // what is left of "> You /arc." or '> You say "/arc."' is only the Do/Say wrapper: show the note alone
+      const left = rest.replace(/^\s*>?\s*you(?:\s+say)?\b/i, "").replace(/[\s.!?,;:"“”]/g, "");
+      out = createNow || !left ? mark : rest + " " + mark;
     }
     return { text: out };
   };

@@ -207,4 +207,13 @@ turn("I sleep until morning.", "You wake to birdsong.");
 turn("I get up.", "The kettle sings.");
 assert(cardLog().length === nLog + 1, "no generic line when the AI skips the summary: " + cardLog().slice(nLog).join(" | "));
 
+// commands typed in Do and Say mode: AI Dungeon wraps them as "> You /arc." and '> You say "/arc."'
+for (const t of ["\n> You /arc.\n", "\n> You say \"/arc.\"\n", "/arc"]) {
+  const r = run("input", t).text;
+  assert(/^\[LW: Story: act \d/.test(r.trim()) || /^\[LW: Story(?: \(finished\))?/.test(r.trim()), "arc status, note alone, for " + JSON.stringify(t) + ": " + r);
+}
+assert(/^\[LW: Mira:/.test(run("input", "\n> You /rel Mira.\n").text.trim()), "/rel in Do mode");
+const doNpc = run("input", "\n> You /npc Vex, a guard who owes you a favor.\n").text;
+assert(/Writing the character card for Vex/.test(doNpc), "/npc in Do mode: " + doNpc);
+
 console.log("ok");
