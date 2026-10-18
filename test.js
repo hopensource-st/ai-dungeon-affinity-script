@@ -123,4 +123,25 @@ for (let i = 0; i < 5; i++) turn("I wave.", "Tobin and Mira look up, turn " + i 
 assert(G.state.lw.rel["1"].s.obsession === 0, "Mira (ordinary) stays at 0");
 assert(G.state.lw.rel["2"].s.obsession > 1, "Tobin (yandere) grows: " + G.state.lw.rel["2"].s.obsession);
 
+// chronicle: when a twist ends the AI is asked for {log: ...}; its line goes in, the marker leaves the story
+const Wc = G.state.lw.w;
+const runTwist = (reply) => {
+  Wc.tw = null; Wc.twEnd = -99;
+  run("input", "/twist secret");
+  for (let i = 0; i < 12 && !Wc.pendLog.length; i++) turn("I chat with Mira.", "Mira hums, beat " + i + ".");
+  assert(Wc.pendLog.length, "twist ended");
+  const out = turn("I chat with Mira.", reply);
+  assert(/\{log: one short past-tense sentence/.test(G.state.memory.frontMemory), "AI asked for a summary");
+  return out;
+};
+let shownLog = runTwist("Mira finally speaks.\n{log: Mira admitted she had been reading the protagonist's letters.}");
+assert(!/\{log/.test(shownLog), "marker removed from the story");
+assert(/\] Mira admitted she had been reading/.test(Wc.log.join("\n")), "AI summary in the chronicle");
+G.state.lw.w.twUsed = [];
+runTwist("Mira says nothing more.");
+assert(/\] Mira's secret comes out, and it changes things\.$/.test(Wc.log[Wc.log.length - 1]), "generic text when the AI forgets: " + Wc.log[Wc.log.length - 1]);
+turn("I wait.", "Time passes for Mira.");
+assert(/Recently: \(Day \d+\) /.test(G.state.memory.frontMemory) && !/\[Day/.test(G.state.memory.frontMemory.slice(1)), "chronicle sent with clean dates");
+assert(!Wc.log.some((l) => / is now [^.]* of\.$/.test(l)), "threshold lines keep their full text");
+
 console.log("ok");

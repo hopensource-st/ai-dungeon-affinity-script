@@ -58,7 +58,7 @@ const LW = (() => {
       mood_neg: "insult|mock|sneer|lied|lying|liar|threat|slap|punch|shov|betray|yell|shout|scold|ignor|refus|glar|scowl|cruel|rude|angr|furious|disgust|humiliat|curs",
       auto_allow: true,
       thoughts: true, thoughts_show: false, thoughts_interval: 4, thoughts_max: 1, thoughts_keep: 5, thoughts_words: 20, thoughts_context: 2,
-      chronicle_lines: 4, chronicle_max: 60, chronicle_stats: "affinity|attraction|obsession", chronicle_min: 4,
+      chronicle_lines: 2, chronicle_max: 60, chronicle_stats: "affinity|attraction|obsession", chronicle_min: 4,
       clock: true, clock_times: "dawn|morning|afternoon|evening|night", clock_day: 1, clock_time: "morning", clock_turns: 12, clock_on_beat: true,
       scene: true, scene_len: 6,
       scene_setup: "Scene rhythm: setup. Establish the place and what each character wants; keep the tension low and let it build.",
@@ -615,7 +615,8 @@ const LW = (() => {
         n++;
       }
     }
-    if (W.log.length && s.chronicle_lines > 0) add(6, "Chronicle: " + W.log.slice(-s.chronicle_lines).join(" ").replace(/\]\s/g, "] ").replace(/\]/g, ")").replace(/\(Day/g, "(Day") + "");
+    if (W.log.length && s.chronicle_lines > 0)
+      add(3, "Recently: " + W.log.slice(-s.chronicle_lines).map((l) => l.replace(/^\[(Day \d+)[^\]]*\]\s*/, "($1) ").replace(/[[\]]/g, "").slice(0, 160)).join(" "));
     if (info.actionCount < s.early_actions) {
       const quiet = X.roster
         .filter((c) => !ids.includes(c.id) && !c.cfg.flags.noearly)
@@ -624,6 +625,7 @@ const LW = (() => {
       if (quiet.length) add(5, "Early game: soon give " + quiet.join(" and ") + " a moment with the protagonist.");
     }
     add(1, tp ? thoughtInstr(X, tp, L) : "");
+    if (W.pendLog.length) add(1, "At the very end of your reply, on its own line, add {log: one short past-tense sentence saying what has just happened in the story}.");
     if (s.contact) {
       const names = L.allow.map((id) => X.byId[id] && X.byId[id].first).filter(Boolean);
       if (names.length) add(0, "The protagonist permits " + names.join(" and ") + " to touch them in this action only.");
@@ -842,7 +844,7 @@ const LW = (() => {
   const newW = () => ({
     flags: {}, fired: {}, log: [], day: 1, tod: 0, inited: false, ct: 0, sc: { n: 1, t: 0 }, ev: {}, act: 1, bt: null,
     btEnd: -999, q: {}, mode: "", reroll: 0, seed: Math.floor(Math.random() * 90000) + 1, arcDone: false, off: false,
-    force: [], auto: [], create: null, tw: null, twEnd: 0, twUsed: [],
+    force: [], auto: [], create: null, tw: null, twEnd: 0, twUsed: [], pendLog: [],
   });
   const ensureW = (W) => { const d = newW(); for (const k of Object.keys(d)) if (W[k] === undefined) W[k] = d[k]; };
 
@@ -1131,7 +1133,7 @@ const LW = (() => {
     const W = L.w;
     W.fired[b.id] = cx.turn; W.bt = null; W.btEnd = cx.turn;
     for (const f of b.sets) W.flags[f] = 1;
-    addLog(X, W, b.log || "Story beat: " + b.title);
+    if (b.log) addLog(X, W, b.log); else W.pendLog.push("Story beat: " + b.title + ".");   // the AI is asked to write what happened
     if (X.cfg.s.clock && X.cfg.s.clock_on_beat) advTod(X, W, 1);
   };
   const actDone = (W, q) => q.f.every((id) => W.fired[id] != null) && ((q.mode === "random" || !q.f.length) ? q.p.every((id) => W.fired[id] != null) : true);
@@ -1209,7 +1211,8 @@ const LW = (() => {
       if (W.tw.st <= t.stages.length) return;
       for (const f of t.sets) W.flags[f] = 1;
       const done = twistFill(t.log || t.stages[t.stages.length - 1], W.tw.who);
-      addLog(X, W, done.charAt(0).toUpperCase() + done.slice(1) + ".");
+      const line = done.charAt(0).toUpperCase() + done.slice(1) + ".";
+      if (t.log) addLog(X, W, line); else W.pendLog.push(line);
       W.tw = null; W.twEnd = cx.turn;
       return;
     }
@@ -1799,16 +1802,18 @@ const LW = (() => {
       return { text: res };
     }
 
-    let body = text;
+    let body = text, logged = false;
     // markers the AI may write: {flag:x} {event:x} {beat} {log:text}
     body = body.replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}]*))?\}/gi, (m, k, v) => {
       const kind = k.toLowerCase(), val = String(v || "").trim();
       if (kind === "flag" && val) W.flags[slug(val)] = 1;
-      else if (kind === "log" && val) addLog(X, W, val);
+      else if (kind === "log" && val) { addLog(X, W, val); logged = true; }
       else if (kind === "event") { const e = X.ev.find((x) => x.id === slug(val)); if (e) startEvent(X, L, e, { turn }); }
       else if (kind === "beat" && W.bt) W.bt.at = -1000;
       return "";
-    }).replace(/[ \t]{2,}/g, " ");
+    }).replace(/[ \t]{2,}/g, " ").replace(/\s+$/, "");
+    // a twist or beat that ended last turn: the AI was asked for a {log:...}; without one, the generic text goes in
+    if (W.pendLog.length) { if (!logged) W.pendLog.forEach((l) => addLog(X, W, l)); W.pendLog = []; }
 
     // thoughts: the AI writes "Name thinks: «...»"; the engine stores it in the card's Notes and, unless
     // thoughts_show is on, removes it from the story text (like Inner Self does)
@@ -1887,7 +1892,7 @@ const LW = (() => {
         if (snapshot[name] == null || r.s[name] == null) continue;
         let hit = null;
         for (const e of X.cfg.stages[name] || []) if (e[0] >= X.cfg.s.chronicle_min && snapshot[name] < e[0] && r.s[name] >= e[0] && e[1]) hit = e[1];
-        if (hit) addLog(X, W, ch.first + " is now " + hit.replace(/\s+the protagonist\b/g, "").replace(/^the protagonist is /, ""));
+        if (hit) addLog(X, W, ch.first + " is now " + hit + ".");
       }
     }
     for (const f of found) {
