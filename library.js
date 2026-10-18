@@ -5,7 +5,7 @@
 // Stats, relations, thoughts, chronicle, events, arc, clock, scenes, cleaner, card creation, commands.
 // ============================================================================
 const LW = (() => {
-  const VERSION = "1.0.1";                                    // shown by /check; bump it on every published update
+  const VERSION = "1.0.2";                                    // shown by /check; bump it on every published update
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const num = (v, d) => { const n = parseFloat(v); return isNaN(n) ? d : n; };
   const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -272,7 +272,7 @@ const LW = (() => {
       const keys = String(c.keys || "").split(",").map((k) => k.trim()).filter((k) => k.length >= 3 && /^[\p{L}'’ .\-]+$/u.test(k));
       const name = (title.replace(/^@/, "").replace(/\s*[([].*$/, "").trim() || keys[0] || strip(entry).split(/[,.:\n]/)[0]).trim();
       if (!name || name.length > 40) return;
-      const first = name.split(/\s+/)[0];
+      const first = stripTitles(name).split(/\s+/)[0];           // "Lady Corvina Ashe" -> Corvina
       if (skip.includes(name.toLowerCase()) || skip.includes(first.toLowerCase())) return;
       const aliases = (cfg.vals.alias || "").split("/").map((a) => a.replace(/_/g, " ").trim()).filter((a) => a.length >= 3);
       const names = Array.from(new Set([name, first].concat(keys, aliases)));
@@ -1390,9 +1390,10 @@ const LW = (() => {
     place: { type: "location", word: "location", tpl: "place_template" },
   };
   const capName = (n) => n.split(" ").map((w, i) => (i > 0 && /^(of|the|de|la|von|van|and)$/.test(w) ? w : w.charAt(0).toUpperCase() + w.slice(1))).join(" ");
+  // triggers: "Captain Vex Dorn" -> Vex, Vex Dorn, Captain Vex Dorn (a title alone never becomes a trigger)
   const keyList = (kind, name) => {
     const k = [];
-    if (kind === "npc") k.push(name.split(" ")[0]);
+    if (kind === "npc") { const core = stripTitles(name); k.push(core.split(" ")[0]); k.push(core); }
     k.push(name);
     const bare = name.replace(/^the\s+/i, "");
     if (bare !== name) k.push(bare);
@@ -1417,7 +1418,8 @@ const LW = (() => {
     const ap = t.search(/\bAppearance:/i);
     if (ap >= 0) { const m = t.slice(ap).match(/^[^.!?]*[.!?]/); if (m) t = t.slice(0, ap + m[0].length); }
     if (t.length < 30) return "";
-    if (!t.toLowerCase().startsWith(name.split(" ")[0].toLowerCase())) t = name + ", " + t.charAt(0).toLowerCase() + t.slice(1);
+    // the name goes first, unless the card already opens with it ("Captain Vex Dorn, ..." for /npc Vex)
+    if (!t.split(",")[0].toLowerCase().includes(stripTitles(name).toLowerCase())) t = name + ", " + t.charAt(0).toLowerCase() + t.slice(1);
     if (t.length > max) {
       const cut = t.slice(0, max), i = cut.lastIndexOf(".");
       t = i > max * 0.5 ? cut.slice(0, i + 1) : cut.trim();
@@ -1487,7 +1489,7 @@ const LW = (() => {
     if (!entry) return "[LW: Could not read a card from the reply for " + cr.name + ". Try the command again, with a short description.]";
     // the full name is whatever the card text starts with (Kel -> Kel Doran)
     const seg = entry.split(",")[0].trim();
-    const full = seg.toLowerCase().startsWith(cr.name.toLowerCase()) && seg.length <= 40 && /^[\p{L}'’ \-]+$/u.test(seg) ? seg : cr.name;
+    const full = seg.toLowerCase().includes(stripTitles(cr.name).toLowerCase()) && seg.length <= 40 && /^[\p{L}'’ \-]+$/u.test(seg) ? seg : cr.name;
     const keys = Array.from(new Set(keyList(cr.kind, full).split(", ").concat([cr.name]))).join(", ");
     if (keyExists(cr.kind, cr.name) || keyExists(cr.kind, full)) {
       if (L.made && L.made[cr.name.toLowerCase()] === turn) {            // a retry of the same command: rewrite our own card
@@ -1498,8 +1500,12 @@ const LW = (() => {
     }
     const res = addStoryCard(keys, entry, kind.type);
     if (res === false) return "[LW: Could not create the card for " + cr.name + " (duplicate triggers).]";
-    if (kind.type === "character")
-      for (let i = storyCards.length - 1; i >= 0; i--) if (storyCards[i] && storyCards[i].keys === keys) { storyCards[i].description = "[cfg]"; break; }
+    for (let i = storyCards.length - 1; i >= 0; i--) {
+      if (!storyCards[i] || storyCards[i].keys !== keys) continue;
+      storyCards[i].title = full;                              // without it the card shows its whole trigger list as a title
+      if (kind.type === "character") storyCards[i].description = "[cfg]";
+      break;
+    }
     L.made = L.made || {};
     L.made[cr.name.toLowerCase()] = turn;
     let tiesNote = "";
@@ -1670,6 +1676,10 @@ const LW = (() => {
   const TITLES = new Set(("i i'm i'll i've i'd mr mrs ms dr sir lady lord captain king queen prince princess master mistress " +
     "god gods oh ah ok okay monday tuesday wednesday thursday friday saturday sunday january february march april may june july " +
     "august september october november december").split(" "));
+  // "Captain Vex Dorn" -> "Vex Dorn": honorifics before a name are not the name
+  const HONORIFICS = new Set(("mr mrs ms miss dr sir dame lady lord captain commander general sergeant king queen prince princess " +
+    "duke duchess count countess baron baroness master mistress father mother sister brother saint").split(" "));
+  const stripTitles = (n) => { const w = String(n).trim().split(/\s+/); while (w.length > 1 && HONORIFICS.has(w[0].toLowerCase())) w.shift(); return w.join(" "); };
   const suggestCard = (X, L, body, turn) => {
     const s = X.cfg.s;
     if (!s.suggest_cards) return "";

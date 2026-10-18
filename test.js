@@ -216,4 +216,12 @@ assert(/^\[LW: Mira:/.test(run("input", "\n> You /rel Mira.\n").text.trim()), "/
 const doNpc = run("input", "\n> You /npc Vex, a guard who owes you a favor.\n").text;
 assert(/Writing the character card for Vex/.test(doNpc), "/npc in Do mode: " + doNpc);
 
+// card creation: the name is not repeated, a title alone is never a trigger, the card gets a title
+G.state.lw.w.create = null;
+turn("/npc Corvina, a widow", "Lady Corvina Ashe, a widowed countess, 40. Proud and cunning. Appearance: black lace.");
+const cv = storyCards[storyCards.length - 1];
+assert(cv.title === "Lady Corvina Ashe" && /^Lady Corvina Ashe, a widowed/.test(cv.entry), "title set, name not repeated: " + JSON.stringify(cv));
+assert(!cv.keys.split(", ").includes("Lady") && cv.keys.split(", ")[0] === "Corvina", "no bare title trigger: " + cv.keys);
+assert(/Corvina:/.test(run("input", "/rels").text), "tracked as Corvina, not Lady");
+
 console.log("ok");
