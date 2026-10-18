@@ -153,4 +153,15 @@ const fm = G.state.memory.frontMemory;
 assert(/Tobin: [^.]*preoccupied/.test(fm) && /Tobin: [^.]*wary of the protagonist/.test(fm), "moved stages only: " + fm);
 assert(!/indifferent/.test(fm) && !/Mira: /.test(fm), "unchanged characters send nothing");
 
+// thoughts: two characters can think in one reply; every new thought lands in a dated diary in Notes, capped
+cfg.description += "\nthoughts_diary: 3";
+turn("I sit between them.", "Mira thinks (+): «Tobin should apologize first, honestly.»\nTobin thinks (-): «The protagonist never listens to anyone here.»\nThey both stay quiet.");
+assert(/^~ \(Day \d+\) Tobin should apologize first, honestly\.$/m.test(storyCards[0].description), "Mira diary line:\n" + storyCards[0].description);
+assert(/^~ \(Day \d+\) The protagonist never listens/m.test(storyCards[1].description), "Tobin thought stored too");
+const fresh = ["The bread burned again this morning.", "Rain makes the cellar smell of wine.", "Old Garrick still owes me three coins.", "Maybe I should paint the sign blue."];
+for (const t of fresh) turn("I wait.", "Mira thinks (=): «" + t + "»\nMira waits.");
+const diaryLines = storyCards[0].description.split("\n").filter((l) => /^~ /.test(l));
+assert(diaryLines.length === 3 && /paint the sign blue/.test(diaryLines[2]), "diary capped, newest kept: " + diaryLines.join(" | "));
+assert(G.state.lw.rel["1"].th.length <= 5, "state keeps only the last few");
+
 console.log("ok");
