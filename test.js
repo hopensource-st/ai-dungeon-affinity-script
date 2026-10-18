@@ -180,4 +180,18 @@ assert(afterFirst === before + 11, "first reply added its entry");
 run("output", "Nothing happens, again.");                    // retry: same actionCount
 assert(cardLog().length === afterFirst, "retry does not duplicate card entries");
 
+// clock: moves only when the narration (or your action) says so; dialogue and memories do not move it
+const Wk = G.state.lw.w, at = () => "day " + Wk.day + " tod " + Wk.tod;   // tod: 0 dawn, 1 morning, 2 afternoon, 3 evening, 4 night
+Wk.day = 5; Wk.tod = 4;
+turn("I sleep until morning.", "You rest well.");
+assert(at() === "day 6 tod 1", "own action: sleep until morning -> " + at());
+turn("I listen.", "\"I remember that night,\" Mira says. She recalls the storm of years ago, the next day it rained.");
+assert(at() === "day 6 tod 1", "dialogue and memories ignored -> " + at());
+turn("I wait.", "The sun sets over the harbor.");
+assert(at() === "day 6 tod 3", "the sun sets -> evening -> " + at());
+for (let i = 0; i < 15; i++) turn("I keep talking.", "Mira answers, point " + i + ".");
+assert(at() === "day 6 tod 3", "no drift from turns alone -> " + at());
+turn("I go home.", "The next morning, the square is quiet.");
+assert(at() === "day 7 tod 1", "the next morning -> " + at());
+
 console.log("ok");

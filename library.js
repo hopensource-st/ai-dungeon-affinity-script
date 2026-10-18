@@ -59,7 +59,7 @@ const LW = (() => {
       auto_allow: true,
       thoughts: true, thoughts_show: false, thoughts_interval: 4, thoughts_max: 2, thoughts_keep: 5, thoughts_diary: 100, thoughts_words: 20, thoughts_context: 2,
       chronicle_lines: 2, chronicle_max: 200, chronicle_stats: "affinity|attraction|obsession", chronicle_min: 4,
-      clock: true, clock_times: "dawn|morning|afternoon|evening|night", clock_day: 1, clock_time: "morning", clock_turns: 12, clock_on_beat: true,
+      clock: true, clock_times: "dawn|morning|afternoon|evening|night", clock_day: 1, clock_time: "morning", clock_turns: 0, clock_on_beat: false,
       scene: true, scene_len: 6,
       scene_setup: "Scene rhythm: setup. Establish the place and what each character wants; keep the tension low and let it build.",
       scene_mid: "Scene rhythm: complication. Raise the stakes; something goes wrong, is said, or is revealed.",
@@ -916,17 +916,27 @@ const LW = (() => {
     W.tod = i; W.ct = 0;
   };
   const NUMW = { two: 2, three: 3, four: 4, five: 5, several: 3, "a few": 3 };
+  // words for a moment of the day -> the default clock_times name ("tod" jumps go to its next occurrence)
+  const TODW = { dawn: "dawn", sunrise: "dawn", daybreak: "dawn", "first light": "dawn", morning: "morning", noon: "afternoon",
+    midday: "afternoon", afternoon: "afternoon", evening: "evening", dusk: "evening", sunset: "evening", night: "night", nightfall: "night", midnight: "night" };
+  const tod = (w) => ({ tod: TODW[String(w).toLowerCase().replace(/\s+/g, " ")] });
   const JUMPS = [
     [/\b(?:a\s+week|one\s+week|weeks?)\s+later\b/i, () => ({ day: 7, tod: "morning" })],
     [/\b(\d+|two|three|four|five|several|a\s+few)\s+days?\s+later\b/i, (m) => ({ day: parseInt(m[1], 10) || NUMW[m[1].toLowerCase().replace(/\s+/g, " ")] || 2, tod: "morning" })],
-    [/\b(?:the\s+)?(?:next|following)\s+(?:morning|day)\b|\bwhen\s+morning\s+came\b|\bat\s+(?:first\s+light|daybreak)\b|\bdawn\s+(?:broke|came|arrived)\b/i, () => ({ day: 1, tod: "morning" })],
-    [/\b(?:that\s+night|at\s+nightfall|by\s+nightfall|as\s+night\s+fell|late\s+that\s+night)\b/i, () => ({ tod: "night" })],
-    [/\b(?:that\s+evening|by\s+evening|as\s+evening\s+(?:fell|came)|at\s+dusk|at\s+sunset)\b/i, () => ({ tod: "evening" })],
-    [/\b(?:that\s+afternoon|at\s+noon|by\s+midday|later\s+that\s+day)\b/i, () => ({ tod: "afternoon" })],
-    [/\b(?:hours?\s+later|some\s+time\s+later|a\s+while\s+later|later\s+that)\b/i, () => ({ step: 1 })],
+    [/\b(?:the\s+)?(?:next|following)\s+(?:morning|day)\b|\bthe\s+morning\s+after\b/i, () => ({ day: 1, tod: "morning" })],
+    [/\b(?:until|till)\s+(?:the\s+)?(dawn|sunrise|daybreak|first\s+light|morning|noon|midday|afternoon|evening|dusk|sunset|night|nightfall|midnight)\b|\b(?:by|at|around)\s+(dawn|sunrise|daybreak|first\s+light|morning|noon|midday|evening|dusk|sunset|nightfall|midnight)\b/i, (m) => tod(m[1] || m[2])],
+    [/\b(dawn|morning|evening|night|dusk)\s+(?:broke|breaks|came|comes|fell|falls|arrived|arrives)\b/i, (m) => tod(m[1])],
+    [/\bthe\s+sun\s+(?:rises|rose|comes\s+up|came\s+up)\b/i, () => tod("dawn")],
+    [/\bthe\s+sun\s+(?:sets|set|sank|sinks|goes\s+down|went\s+down)\b/i, () => tod("evening")],
+    [/\b(?:late\s+|later\s+)?that\s+(night|evening|afternoon)\b/i, (m) => tod(m[1])],
+    [/\b(?:an?\s+hour|hours|some\s+time|a\s+while)\s+later\b|\blater\s+that\s+day\b/i, () => ({ step: 1 })],
   ];
+  // only narration moves the clock: dialogue, thoughts and memories ("I remember that night") do not
+  const narration = (text) => String(text).replace(/"[^"\n]*"|“[^”\n]*”|«[^»\n]*»/g, " ")
+    .split(/(?<=[.!?])\s+/).filter((s) => !/\b(?:remember\w*|recall\w*|memor\w+|ago|used\s+to|once\s+upon)\b/i.test(s)).join(" ");
   const detectJump = (text) => {
-    for (const r of JUMPS) { const m = text.match(r[0]); if (m) return r[1](m); }
+    const t = narration(text);
+    for (const r of JUMPS) { const m = t.match(r[0]); if (m) { const j = r[1](m); if (!("tod" in j) || j.tod || j.day) return j; } }
     return null;
   };
   const applyJump = (X, W, j) => {
@@ -1915,7 +1925,7 @@ const LW = (() => {
     }
 
     // scenes and clock
-    const jump = detectJump(body);
+    const jump = detectJump((L.lastAction || "") + "\n" + body);           // your action counts too ("I sleep until morning")
     if (jump) { W.sc = { n: W.sc.n + 1, t: 0 }; if (ts.clock) applyJump(X, W, jump); }
     else {
       W.sc.t++;
