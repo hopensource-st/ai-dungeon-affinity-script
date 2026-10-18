@@ -80,7 +80,7 @@ Evander | Aldric | quiet rivals
 Evander | Seraphine | he uses her to gather information
 Evander | Cassian | distrust each other
 Dorian | Octavia | her trusted advisor, whom she secretly fears
-Elowen | Aldric | he once loved her briefly and she never forgot it
+Elowen | Aldric | he once loved her briefly; now they share the secret of their child and pretend at court that the protagonist is only a guest
 Elowen | Hespera | Hespera was her nursemaid when she was a child
 # Court bond deck: bond: id | weight N | text ({a} and {b} become the two names)
 bond: acquainted | weight 3 | {a} and {b} know each other only from court ceremonies
@@ -102,7 +102,7 @@ The engine writes the story log and the world state here. It keeps the whole chr
 Triggers: lw_chronicle
 Notes:
 # Chronicle. Lines that begin with a dash are story log entries.
-- The protagonist has just arrived at court for the first time.
+- The protagonist and their mother Elowen have just arrived at court as the King's guests, hoping to find a way to break the curse.
 ```
 
 ## Events card (Type: Events)
@@ -113,11 +113,11 @@ The five hidden plot threads, one public event, one random moment, and a court t
 Triggers: lw_events
 Notes:
 # Hidden plot threads (secret): the AI only hints, never states them outright.
-event: octavia_secret | secret | when: met:Octavia, action>=30 | stages: Octavia looks at the protagonist a moment too long and knows details she should not >> Octavia speaks of "what is owed" and lets the protagonist understand with a look or a private word that she knows about the curse, without ever confessing aloud | hold 6 | sets: octavia_hinted | log: Octavia let the protagonist understand she knows about the curse.
+event: octavia_secret | secret | when: met:Octavia, action>=30 | stages: Octavia looks at the protagonist a moment too long, as if she knows exactly who the King's guest is >> Octavia speaks of "what is owed" and lets the protagonist understand, with a look or a private word, that she knows who they are and why they came, and that she will not make it easy | hold 6 | sets: octavia_hinted | log: Octavia let the protagonist understand she knows who they are and why they came.
 event: hespera_secret | secret | when: met:Hespera, flag:octavia_hinted | stages: Hespera deflects questions about the curse and grows evasive when pressed >> Hespera hints that there may be a way to weaken or break the curse, at a heavy price she has told no one | hold 6 | sets: hespera_hinted | log: Hespera hinted at a price for breaking the curse.
 event: dorian_secret | secret | when: met:Dorian, Dorian.obsession>=4 | stages: Dorian has noticed that a few people near the protagonist are less affected, and hints at his private notes without sharing them >> Dorian is close to the truth and weighs sharing it against using it | hold 6 | sets: dorian_close | log: Dorian is close to understanding the curse.
-event: aldric_secret | secret | when: met:Aldric, action>=15 | stages: Aldric's sudden devotion to the protagonist frightens him, and he wonders about the child he never met >> Aldric almost speaks of the night with Elowen, then stops himself | hold 6 | sets: aldric_wondering
-event: blood_suspected | secret | when: action>=45 | stages: Someone at court remarks on a likeness between the protagonist and the royal children, then quickly changes the subject >> A clue to the protagonist's true parentage turns up (an old letter, a portrait, a servant's memory) where Cassian or Isolde could find it | hold 6 | sets: blood_suspected | log: A clue to the protagonist's true parentage surfaced at court.
+event: aldric_secret | secret | when: met:Aldric, action>=15 | stages: Aldric watches the protagonist with a warmth that is too much for a mere guest, and almost lets a fatherly word slip in public >> Aldric nearly tells someone the truth (Cassian, Isolde, or the protagonist alone), then stops himself, afraid of the Queen | hold 6 | sets: aldric_wondering | log: The King nearly gave away whose child the guest is.
+event: blood_suspected | secret | when: action>=45 | stages: Someone at court remarks on a likeness between the King's guest and the King, then quickly changes the subject >> A clue to the guest's true parentage turns up (an old letter, a portrait, a servant's memory) where Cassian or Isolde could find it | hold 6 | sets: blood_suspected | log: A clue to the guest's true parentage surfaced at court.
 event: evander_secret | secret | when: met:Evander, Evander.obsession>=5 | stages: Evander quietly gathers proof of witchcraft, in small polite unsettling moments >> Evander is sure; he offers silence in exchange for something, politely and without threats | hold 6 | sets: evander_leverage | log: Evander suspects witchcraft and wants something for his silence.
 # Public news and a random moment.
 event: court_rumors | public | when: flag:rumors, prob 40 | stages: Whispers of witchcraft spread through the court; servants fall silent when the protagonist passes >> Someone openly repeats the rumor within the protagonist's hearing | hold 4 | sets: rumors_spread | log: Rumors of witchcraft are now openly spoken at court.
@@ -157,7 +157,7 @@ beat: 2 | bank | The Near-Touch | when: any obsession>=6 | guide: Someone reache
 beat: 2 | bank | A Genuine Moment | when: any trust>=5 | guide: A tender, sincere scene where trust is earned slowly. The protagonist doubts it even as they feel it.
 beat: 2 | bank | A Confession | when: any attraction>=7 trust>=6 | guide: Someone confesses sincerely, in words that sound unlike the curse's pleading. The protagonist cannot tell whether it is real, and must decide how to answer.
 beat: 2 | fixed | Midpoint, The Breach | when: flag:gift_received, action>=60 | guide: Witnesses see the counter-spell hold. Rumors of witchcraft begin. | sets: rumors
-beat: 2 | fixed | Blood Ties Surface | when: flag:blood_suspected | guide: The truth comes out: the protagonist is the King's child, and Cassian and Isolde are their half-siblings. Whoever learns it is torn between the fixation, shame, and the possibility that some of what they feel is real. Handle it with weight, never as a casual line. The protagonist decides what, if anything, happens next. | sets: blood_ties_known
+beat: 2 | fixed | Blood Ties Surface | when: flag:blood_suspected | guide: The truth comes out: the King's guest is his child, and Cassian and Isolde are their half-siblings. Whoever learns it is torn between the fixation, shame, and the possibility that some of what they feel is real, and the King's pretense starts to crack. Handle it with weight, never as a casual line. The protagonist decides what, if anything, happens next. | sets: blood_ties_known
 beat: 2 | fixed | Cornered | when: flag:rumors, any obsession>=8 | guide: Someone consumed by the curse corners the protagonist with possessive pleading. Do not describe graphic violence. The protagonist's consent decides the outcome. | sets: cornered
 beat: 3 | bank | A Last Plea | when: any obsession>=8 | guide: Someone consumed by the curse makes one last desperate plea before the end.
 beat: 3 | bank | An Unexpected Defender | when: any trust>=6 | guide: Someone the protagonist trusts stands up for them in front of the court, at a cost.
@@ -184,7 +184,7 @@ Triggers: Aldric, the King
 Notes: [cfg obsession:0.35 start.trust:3 romance:no tone:guilty_and_conflicted]
 base: It is absurd to feel this much for a stranger, and yet I cannot look away.
 Entry:
-Aldric Valemont, the King, 52. Charming, weary, burdened by guilt. He remembers the night with Elowen fondly. He knows nothing of the curse: he only feels an overwhelming, inexplicable pull toward the protagonist that he mistakes for fatherly love, and it turns possessive. He wants to keep them at court, close and protected. Appearance: tall and broad, graying dark-blond hair and beard, tired grey eyes, a plain gold circlet.
+Aldric Valemont, the King, 52. Charming, weary, burdened by guilt. He invited the protagonist to court as a guest, and in private he knows they are his child by Elowen; to keep the Queen calm he hides it from everyone, his own children included. He knows nothing of the curse: he only feels an overwhelming pull toward the protagonist that he tells himself is a father's love finally allowed, and it turns possessive. He wants to keep them at court, close and protected. Appearance: tall and broad, graying dark-blond hair and beard, tired grey eyes, a plain gold circlet.
 ```
 
 ```
@@ -193,7 +193,7 @@ Notes: [cfg obsession:0.4 start.trust:0 trust:0.06 start.obsession:5 fear:2 roma
 base: My own spell binds me, and it is only fitting. I do not regret it.
 base: I want this child and I resent them in equal measure, and I am sorry for neither.
 Entry:
-Octavia Valemont, the Queen, 48. Regal, patient, ruthless. She cursed the protagonist out of wounded pride and fury, and she alone at court knows why everyone is drawn to them. She also knows whose child the protagonist is, and keeps it to herself. The curse has caught her too; she knows it, feels no shame, and indulges the fixation like any appetite. The protagonist is a reminder of the King's betrayal: she resents, wants and torments them at once, keeping them close with invitations, gifts and favors that cannot be refused. The counter-spell infuriates and fascinates her, and she tests it with patience. The protagonist has real reason to fear her. Appearance: tall and pale, sharp cheekbones, dark eyes, black hair coiled under a silver crown, always in crimson.
+Octavia Valemont, the Queen, 48. Regal, patient, ruthless. Years ago, when she learned of the King's child, she cursed them out of wounded pride and fury, and she alone at court knows why everyone is drawn to them. Now the child is here as the King's "guest", and she plays along with his pretense, knowing far more than he does. The curse has caught her too; she knows it, feels no shame, and indulges the fixation like any appetite. She resents, wants and torments the protagonist at once, keeping them close with invitations, gifts and favors that cannot be refused. The counter-spell infuriates and fascinates her, and she tests it with patience. The protagonist has real reason to fear her. Appearance: tall and pale, sharp cheekbones, dark eyes, black hair coiled under a silver crown, always in crimson.
 ```
 
 ```
@@ -256,12 +256,12 @@ Tobin Wren, the stable master, 28. Gentle, plain-spoken, uninterested in court g
 Triggers: Elowen
 Notes: [cfg obsession:0 start.trust:9 trust:0.04 romance:no noearly thoughts:8 tone:worried_and_protective alias:Mother/Mama]
 Entry:
-Elowen Marsh, the protagonist's mother, a minor noblewoman, 41. Fierce, anxious, endlessly protective. She hid the protagonist for years, never told the King the child was his, and fears the court will break them. She loves them deeply but sometimes overprotects, treating them as fragile when they are not. Appearance: slight, brown hair graying at the temples, a worn kind face, plain dark dresses.
+Elowen Marsh, the protagonist's mother, a minor noblewoman, 41. Fierce, anxious, endlessly protective. She hid her child from the curse all their life and has come to court with them to find a way to break it. She keeps the curse from the King, afraid of what he would do, and plays along with the pretense that her child is only a guest. She sometimes treats the protagonist as fragile when they are not. Appearance: slight, brown hair graying at the temples, a worn kind face, plain dark dresses.
 ```
 
 ```
 Triggers: Hespera, Brindle
 Notes: [cfg obsession:0 start.trust:8 trust:0.04 romance:no noearly alias:the_nursemaid/Nanny thoughts:8 tone:wry_and_guarded]
 Entry:
-Hespera Brindle, the nursemaid and hedge witch, 67. Blunt, wry, seen-it-all. She cast the counter-spell that protects the protagonist, and she knows more about the curse than she admits. Appearance: small and bent, a long white braid, sharp black eyes, a herb-stained shawl, hands like gnarled roots.
+Hespera Brindle, the nursemaid and hedge witch, 67. Blunt, wry, seen-it-all. She cast the counter-spell that protects the protagonist, came to court with them, and knows more about the curse than she admits. Appearance: small and bent, a long white braid, sharp black eyes, a herb-stained shawl, hands like gnarled roots.
 ```
