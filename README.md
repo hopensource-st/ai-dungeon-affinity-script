@@ -32,7 +32,7 @@ The engine creates five cards of its own. Their triggers (`lw_config`, ...) neve
 |---|---|
 | **LW Config** | Every setting. Edit any line; delete the card to start over. |
 | **LW Relations** | Ties between characters (`Mira \| Tobin \| childhood friends`), a deck of random ties, and tension numbers at the bottom. |
-| **LW Chronicle** | The story log (lines starting with `-`) and the world state: day, time, act, flags. When a twist or beat ends, the AI writes the entry itself (`{log: ...}`, removed from the story); the last `chronicle_lines: 2` entries are sent to the AI. |
+| **LW Chronicle** | The story log (lines starting with `-`) and the world state: day, time, act, flags. The AI writes the entries itself (`{log: ...}`, removed from the story): one per scene (when time jumps, on `/scene`, or every `chronicle_every: 8` turns of a long scene) and one when a twist or beat ends. The last `chronicle_lines: 3` are sent to the AI, so the chronicle can stand in for AI Dungeon's own memory summaries. |
 | **LW Events** | The twist deck (see below). |
 | **LW Arc** | A generic three-act arc with random beats. |
 

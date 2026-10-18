@@ -128,10 +128,10 @@ const Wc = G.state.lw.w;
 const runTwist = (reply) => {
   Wc.tw = null; Wc.twEnd = -99;
   run("input", "/twist secret");
-  for (let i = 0; i < 12 && !Wc.pendLog.length; i++) turn("I chat with Mira.", "Mira hums, beat " + i + ".");
-  assert(Wc.pendLog.length, "twist ended");
+  for (let i = 0; i < 12 && !Wc.pendLog.some(Boolean); i++) turn("I chat with Mira.", "Mira hums, beat " + i + ".");
+  assert(Wc.pendLog.some(Boolean), "twist ended");
   const out = turn("I chat with Mira.", reply);
-  assert(/\{log: one short past-tense sentence/.test(G.state.memory.frontMemory), "AI asked for a summary");
+  assert(/\{log: one past-tense sentence/.test(G.state.memory.frontMemory), "AI asked for a summary");
   return out;
 };
 let shownLog = runTwist("Mira finally speaks.\n{log: Mira admitted she had been reading the protagonist's letters.}");
@@ -193,5 +193,17 @@ for (let i = 0; i < 15; i++) turn("I keep talking.", "Mira answers, point " + i 
 assert(at() === "day 6 tod 3", "no drift from turns alone -> " + at());
 turn("I go home.", "The next morning, the square is quiet.");
 assert(at() === "day 7 tod 1", "the next morning -> " + at());
+
+// scene summaries: a time jump closes the scene; next turn the AI is asked for {log: ...}; no generic line if it forgets
+const Ws = G.state.lw.w;
+Ws.tw = null; Ws.twEnd = G.info.actionCount; Ws.pendLog = [];
+turn("I leave the inn.", "That night, the streets are empty.");
+assert(Ws.pendLog.length === 1 && Ws.pendLog[0] === "", "scene close queued a summary");
+const nLog = cardLog().length;
+turn("I walk home.", "You reach the door.\n{log: Brea left the inn after Mira's warning and walked home alone.}");
+assert(cardLog().length === nLog + 1 && /walked home alone/.test(cardLog().slice(-1)[0]), "scene summary stored");
+turn("I sleep until morning.", "You wake to birdsong.");
+turn("I get up.", "The kettle sings.");
+assert(cardLog().length === nLog + 1, "no generic line when the AI skips the summary");
 
 console.log("ok");

@@ -9,6 +9,7 @@ const LW = (() => {
   const num = (v, d) => { const n = parseFloat(v); return isNaN(n) ? d : n; };
   const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const clone = (o) => JSON.parse(JSON.stringify(o));
+  const andList = (a) => (a.length > 1 ? a.slice(0, -1).join(", ") + " and " + a[a.length - 1] : a.join(""));
 
   const BLOCK = /<<LW\n[\s\S]*?\nLW>>/;
   const RELBLOCK = /<<LWR\n[\s\S]*?\nLWR>>/;
@@ -58,13 +59,13 @@ const LW = (() => {
       mood_neg: "insult|mock|sneer|lied|lying|liar|threat|slap|punch|shov|betray|yell|shout|scold|ignor|refus|glar|scowl|cruel|rude|angr|furious|disgust|humiliat|curs",
       auto_allow: true,
       thoughts: true, thoughts_show: false, thoughts_interval: 4, thoughts_max: 2, thoughts_keep: 5, thoughts_diary: 100, thoughts_words: 20, thoughts_context: 2,
-      chronicle_lines: 2, chronicle_max: 200, chronicle_stats: "affinity|attraction|obsession", chronicle_min: 4,
+      chronicle_lines: 3, chronicle_every: 8, chronicle_max: 200, chronicle_stats: "affinity|attraction|obsession", chronicle_min: 4,
       clock: true, clock_times: "dawn|morning|afternoon|evening|night", clock_day: 1, clock_time: "morning", clock_turns: 0, clock_on_beat: false,
       scene: true, scene_len: 6,
-      scene_setup: "Scene rhythm: setup. Establish the place and what each character wants; keep the tension low and let it build.",
-      scene_mid: "Scene rhythm: complication. Raise the stakes; something goes wrong, is said, or is revealed.",
-      scene_end: "Scene rhythm: climax and release. Bring the scene to its peak, then let it settle on a hook.",
-      scene_over: "Scene rhythm: this scene has run long. Close it and move on with a change of time or place.",
+      scene_setup: "Scene: setup. Establish the place and what each character wants; let tension build.",
+      scene_mid: "Scene: complication. Something goes wrong, is said, or is revealed.",
+      scene_end: "Scene: climax. Bring it to a peak, then settle on a hook.",
+      scene_over: "Scene: running long. Close it with a change of time or place.",
       beat_hold: 4, beat_gap: 3, event_hold: 3, events_max: 2, arc_mode: "hybrid",
       inject_max: 1300, clean: true, clean_repeat: true, max_entry: 1000,
       npc_template: "Full Name, role or occupation, age. Three personality traits. [two or three sentences: how they see the protagonist, what they want, one flaw]. Appearance: [one sentence on build, hair, eyes and clothes].",
@@ -566,9 +567,10 @@ const LW = (() => {
     }
     const tw = W.tw && X.tw.find((t) => t.id === W.tw.id);
     if (tw && tw.stages[W.tw.st - 1])
-      add(2, (W.tw.st < tw.stages.length ? "Twist building up, only hint at it for now: " : "Twist, make it happen now, in a way that fits the story: ") +
+      add(2, (W.tw.st < tw.stages.length ? "Twist (only hint at it): " : "Twist (make it happen now): ") +
         twistFill(tw.stages[W.tw.st - 1], W.tw.who) + ".");
     if (s.scene) add(4, s[{ setup: "scene_setup", mid: "scene_mid", end: "scene_end", over: "scene_over" }[scenePhase(X, W)]]);
+    const feel = {};                                          // same feelings, one line: "Mira and Tobin: ..."
     for (const id of ids) {
       const ch = X.byId[id], r = L.rel[id];
       if (!ch || !r) continue;
@@ -579,8 +581,9 @@ const LW = (() => {
         .sort((a2, b2) => b2.moved - a2.moved)
         .slice(0, s.max_stats)
         .map((x) => x.t);
-      if (bits.length) add(1, ch.name + ": " + bits.join("; ") + ".");
+      if (bits.length) (feel[bits.join("; ")] = feel[bits.join("; ")] || []).push(ch.first);
     }
+    for (const t of Object.keys(feel)) add(1, andList(feel[t]) + ": " + t + ".");
     let np = 0;
     for (let i = 0; i < ids.length; i++) {
       for (let j = i + 1; j < ids.length; j++) {
@@ -593,7 +596,7 @@ const LW = (() => {
         if (ts) bits.push(ts);
         const fa = X.byId[ids[i]].first, fb = X.byId[ids[j]].first;
         const named = tie && tie.text.includes(fa) && tie.text.includes(fb);      // drawn bonds already name both
-        if (bits.length) { add(3, (named ? "" : fa + " and " + fb + ": ") + bits.join("; ").replace(/^./, (c) => c.toUpperCase()) + "."); np++; }
+        if (bits.length) { add(3, (named ? bits.join("; ").replace(/^./, (c) => c.toUpperCase()) : fa + " and " + fb + ": " + bits.join("; ")) + "."); np++; }
       }
     }
     if (s.thoughts && !W.off && s.thoughts_context > 0) {
@@ -612,14 +615,14 @@ const LW = (() => {
         .filter((c) => !ids.includes(c.id) && !c.cfg.flags.noearly)
         .sort((a2, b2) => ((L.rel[a2.id] || {}).scenes || 0) - ((L.rel[b2.id] || {}).scenes || 0))
         .slice(0, 2).map((c) => c.first);
-      if (quiet.length) add(5, "Early game: soon give " + quiet.join(" and ") + " a moment with the protagonist.");
+      if (quiet.length) add(5, "Soon give " + andList(quiet) + " a moment with the protagonist.");
     }
     add(1, tp ? thoughtInstr(X, tp, L) : "");
-    if (W.pendLog.length) add(1, "At the very end of your reply, on its own line, add {log: one short past-tense sentence saying what has just happened in the story}.");
+    if (W.pendLog.length) add(1, "End the reply with {log: one past-tense sentence summing up what just happened}.");
     if (s.contact) {
       const names = L.allow.map((id) => X.byId[id] && X.byId[id].first).filter(Boolean);
       if (names.length) add(0, "The protagonist permits " + names.join(" and ") + " to touch them in this action only.");
-      add(0, "Touch: only if the protagonist explicitly chooses it in this action. Past permission never carries over.");
+      add(0, "Touch: never, unless the protagonist allows it in this very action.");
     }
     const len = () => parts.reduce((n, x) => n + x.t.length + 1, 2);
     while (len() > s.inject_max) {
@@ -1115,7 +1118,7 @@ const LW = (() => {
       }
     }
   };
-  const EVPREFIX = { public: "Common knowledge: ", secret: "Secret thread, only hint at it and never state it outright: ", random: "Something happens: " };
+  const EVPREFIX = { public: "Common knowledge: ", secret: "Secret (only hint, never state): ", random: "Something happens: " };
 
   // ---- arc ---------------------------------------------------------------------
   const beatById = (A, id) => A.beats.find((b) => b.id === id);
@@ -1259,17 +1262,14 @@ const LW = (() => {
   };
   const thoughtInstr = (X, tp, L) => {
     if (!tp.instr.length) return "";
+    // kept short: it is sent whole every time someone thinks (repeats are filtered when the thought is stored)
     const names = tp.instr.map((ch) => ch.first);
-    const used = tp.instr.map((ch) => {
-      const r = L && L.rel[ch.id], last = r && r.th ? r.th.slice(-2) : [];
-      return last.length ? " Already thought by " + ch.first + ", do not repeat or rephrase: " + last.map((t) => "«" + String(t).slice(0, 90) + "»").join(" ") + "." : "";
-    }).join("");
     const tones = tp.instr.filter((ch) => ch.cfg.vals.tone).map((ch) => ch.first + " " + String(ch.cfg.vals.tone).replace(/_/g, " "));
     const mood = X.cfg.s.mood;
-    return "Start the reply with " + (names.length > 1 ? "these lines" : "this line") + ": " + names.map((n) => n + (mood ? " thinks (x): «...»" : " thinks: «...»")).join(" then ") +
-      " (one single sentence per character inside one pair of « », a new first-person thought of at most " + X.cfg.s.thoughts_words + " words, naming people instead of using pronouns, nothing repeated from earlier thoughts" +
-      (mood ? "; x is + if their feelings toward the protagonist warmed in the last moments, - if they cooled, = if neither" : "") +
-      (tones.length ? "; tone: " + tones.join(", ") : "") + ")." + used + " Then continue the story.";
+    return "Begin the reply with " + names.map((n) => n + (mood ? " thinks (x): «...»" : " thinks: «...»")).join(" ") +
+      ": one new first-person sentence each, under " + X.cfg.s.thoughts_words + " words, naming people, not pronouns" +
+      (mood ? "; x is + if warmer toward the protagonist, - if cooler, = if unchanged" : "") +
+      (tones.length ? "; tone: " + tones.join(", ") : "") + ". Then continue the story.";
   };
 
   // ---- mood: was this scene good or bad for the character? ----------------------
@@ -1595,7 +1595,7 @@ const LW = (() => {
       startEvent(X, L, e, { turn });
       return { note: "Event " + e.id + " started." };
     }
-    if (cmd === "scene") { W.sc = { n: W.sc.n + 1, t: 0 }; return { note: "Scene " + W.sc.n + " begins." }; }
+    if (cmd === "scene") { W.sc = { n: W.sc.n + 1, t: 0 }; if (X.cfg.s.chronicle_every > 0) W.pendLog.push(""); return { note: "Scene " + W.sc.n + " begins." }; }
     if (cmd === "time" || cmd === "day") {
       const a = arg.toLowerCase(), t = times(X);
       if (!a) return { note: dayLabel(X, W) + "." };
@@ -1931,6 +1931,9 @@ const LW = (() => {
       W.sc.t++;
       if (ts.clock) { W.ct++; if (ts.clock_turns > 0 && W.ct >= ts.clock_turns) advTod(X, W, 1); }
     }
+    // scene summaries: when a scene closes, or every chronicle_every turns of a long one, the AI logs what happened
+    // (an empty fallback: nothing generic is written if it forgets)
+    if (ts.chronicle_every > 0 && (jump || W.sc.t % ts.chronicle_every === 0)) W.pendLog.push("");
 
     // events and the arc
     const cx = { turn, present: ids, bad: 0 };
