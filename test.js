@@ -164,4 +164,20 @@ const diaryLines = storyCards[0].description.split("\n").filter((l) => /^~ /.tes
 assert(diaryLines.length === 3 && /paint the sign blue/.test(diaryLines[2]), "diary capped, newest kept: " + diaryLines.join(" | "));
 assert(G.state.lw.rel["1"].th.length <= 5, "state keeps only the last few");
 
+// chronicle storage: state keeps the latest few, the card keeps everything, a retry does not duplicate
+const chrC = storyCards.find((c) => c.type === "chronicle");
+const cardLog = () => chrC.description.split("\n").filter((l) => /^- /.test(l));
+const before = cardLog().length;
+for (let i = 0; i < 10; i++) run("input", "/log Entry number " + i + " for the archive");
+assert(G.state.lw.w.log.length <= 6, "state keeps the latest: " + G.state.lw.w.log.length);
+assert(cardLog().length === before + 10, "card keeps them all");
+G.info.actionCount++;
+run("input", "I wait.");
+G.state.lw.w.pendLog = ["Retry check line."];
+run("output", "Nothing happens.");
+const afterFirst = cardLog().length;
+assert(afterFirst === before + 11, "first reply added its entry");
+run("output", "Nothing happens, again.");                    // retry: same actionCount
+assert(cardLog().length === afterFirst, "retry does not duplicate card entries");
+
 console.log("ok");

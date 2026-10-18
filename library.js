@@ -58,7 +58,7 @@ const LW = (() => {
       mood_neg: "insult|mock|sneer|lied|lying|liar|threat|slap|punch|shov|betray|yell|shout|scold|ignor|refus|glar|scowl|cruel|rude|angr|furious|disgust|humiliat|curs",
       auto_allow: true,
       thoughts: true, thoughts_show: false, thoughts_interval: 4, thoughts_max: 2, thoughts_keep: 5, thoughts_diary: 100, thoughts_words: 20, thoughts_context: 2,
-      chronicle_lines: 2, chronicle_max: 60, chronicle_stats: "affinity|attraction|obsession", chronicle_min: 4,
+      chronicle_lines: 2, chronicle_max: 200, chronicle_stats: "affinity|attraction|obsession", chronicle_min: 4,
       clock: true, clock_times: "dawn|morning|afternoon|evening|night", clock_day: 1, clock_time: "morning", clock_turns: 12, clock_on_beat: true,
       scene: true, scene_len: 6,
       scene_setup: "Scene rhythm: setup. Establish the place and what each character wants; keep the tension low and let it build.",
@@ -844,7 +844,7 @@ const LW = (() => {
   const newW = () => ({
     flags: {}, fired: {}, log: [], day: 1, tod: 0, inited: false, ct: 0, sc: { n: 1, t: 0 }, ev: {}, act: 1, bt: null,
     btEnd: -999, q: {}, mode: "", reroll: 0, seed: Math.floor(Math.random() * 90000) + 1, arcDone: false, off: false,
-    force: [], auto: [], create: null, tw: null, twEnd: 0, twUsed: [], pendLog: [],
+    force: [], auto: [], create: null, tw: null, twEnd: 0, twUsed: [], pendLog: [], add: [],
   });
   const ensureW = (W) => { const d = newW(); for (const k of Object.keys(d)) if (W[k] === undefined) W[k] = d[k]; };
 
@@ -1008,15 +1008,20 @@ const LW = (() => {
     if (src === (L.wm || "")) return;
     const cur = chrParse(src);
     if (cur.blk) wAdopt(X, W, cur.blk);
-    if (cur.log.length || cur.blk) W.log = cur.log.slice(-X.cfg.s.chronicle_max);
+    if (cur.log.length || cur.blk) W.log = cur.log.slice(-LOG_KEEP);
     L.wm = src;
   };
+  // state keeps only the latest chronicle entries (what the AI and /chronicle use); the card keeps them all
+  const LOG_KEEP = 6;
   const wPersist = (X, L) => {
     const x = chrCard();
-    if (!x) return;
+    if (!x) { L.w.add = []; return; }
     const W = L.w, srcNow = chrSource(x);
     const own = srcNow.replace(WBLOCK, "").split("\n").filter((l) => !/^\s*-\s+/.test(l)).join("\n").replace(/\n{3,}/g, "\n\n").trim();
-    const text = [own, W.log.map((l) => "- " + l).join("\n"), wBlockText(X, W)].filter(Boolean).join("\n");
+    // the card is the full chronicle: new entries are appended to it, the oldest go past chronicle_max
+    const all = chrParse(srcNow).log.concat(W.add).slice(-X.cfg.s.chronicle_max);
+    W.add = [];
+    const text = [own, all.map((l) => "- " + l).join("\n"), wBlockText(X, W)].filter(Boolean).join("\n");
     if (text === srcNow.trim()) { L.wm = text; return; }
     if (typeof x.c.description === "string") x.c.description = text;
     else updateStoryCard(x.idx, x.c.keys, text, x.c.type);
@@ -1025,8 +1030,10 @@ const LW = (() => {
   const addLog = (X, W, text) => {
     const t = String(text).replace(/\s+/g, " ").replace(/\]/g, ")").trim().slice(0, 220);
     if (!t) return;
-    W.log.push((X.cfg.s.clock ? "[" + dayLabel(X, W) + "] " : "") + t);
-    while (W.log.length > X.cfg.s.chronicle_max) W.log.shift();
+    const line = (X.cfg.s.clock ? "[" + dayLabel(X, W) + "] " : "") + t;
+    W.log.push(line);
+    W.add.push(line);
+    while (W.log.length > LOG_KEEP) W.log.shift();
   };
 
   // ---- conditions: used by events and arc beats ------------------------------
@@ -1794,10 +1801,13 @@ const LW = (() => {
       L.allow = L.applied.allow.slice();
       L.tension = clone(L.applied.tension || {});
       if (L.applied.w) L.w = clone(L.applied.w);
+      const x = chrCard();                                  // entries appended by the retried reply come out of the card
+      if (x && L.applied.chr != null && typeof x.c.description === "string") { x.c.description = L.applied.chr; L.wm = L.applied.chr.trim(); }
       sync(X, L);
       ensureW(L.w);
     } else {
-      L.applied = { turn, rel: clone(L.rel), allow: L.allow.slice(), tension: clone(L.tension), w: clone(L.w) };
+      const x = chrCard();
+      L.applied = { turn, rel: clone(L.rel), allow: L.allow.slice(), tension: clone(L.tension), w: clone(L.w), chr: x ? chrSource(x) : null };
     }
     const W = L.w;
     if (W.create && W.create.done && W.create.doneTurn !== turn) W.create = null;
