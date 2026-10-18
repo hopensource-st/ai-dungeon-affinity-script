@@ -1,6 +1,6 @@
 # LW Affinity Engine for AI Dungeon
 
-A drop-in script that gives every character in your adventure a relationship with the protagonist (affinity, trust, attraction), private thoughts, and memory of what happened, and tells the AI about them each turn. It works in any scenario, yours or someone else's, with no setup: it reads the Character cards that are already there.
+A drop-in script that gives every character in your adventure a relationship with the protagonist (affinity, trust, attraction, and obsession for the characters you choose), private thoughts, and memory of what happened, and tells the AI about them each turn. It works in any scenario, yours or someone else's, with no setup: it reads the Character cards that are already there.
 
 Optional extras: a chronicle (story log), a day/time clock, scene pacing, ties and rivalries between characters, timed events, an authored three-act arc, a phrase cleaner, and commands that write new character, faction and place cards for you.
 
@@ -55,6 +55,7 @@ Cards are never created on their own. When the AI keeps using a name that has no
 Optional. Put a `[cfg ...]` line in the character card's Notes:
 
 - `affinity:0.4` growth per scene of an auto stat (any stat name works). For manual stats, the starting value.
+- `obsession:0.3` makes this character a yandere: obsession (0 and silent for everyone else) rises by this much every scene with the protagonist, however they are treated.
 - `start.trust:6` starting value.
 - `romance:no` no attraction stat for this character.
 - `alias:the_Queen/Her_Majesty` extra names (underscore = space).
@@ -84,7 +85,7 @@ The Config card lists every setting. The most useful:
 
 - `stat: name | auto or manual | min-max | start N | rate N | flags` defines the stats. Writing any `stat:` line replaces the default set, so you can track `fear`, `loyalty`, `rivalry`...
 - `stages: stat | 0=text | 4=text | 8=text` is what the AI is told at each value.
-- **Mood:** auto stats rise after a good scene with the character and fall after a bad one. The engine looks for `mood_pos` / `mood_neg` words in the sentences that name the character (in your action and the reply), and when a character thinks, the AI tags the thought `(+)`, `(-)` or `(=)`, which counts `mood_thought` times as much. `mood_neutral: 0` means a scene with no signal changes nothing (set it to `0.3` for slow drift up). Add `steady` to a stat line to make it always rise while the character is present (e.g. a curse); `mood: off` restores that for every stat.
+- **Mood:** auto stats rise after a good scene with the character and fall after a bad one. The engine looks for `mood_pos` / `mood_neg` words in the sentences that name the character (in your action and the reply), and when a character thinks, the AI tags the thought `(+)`, `(-)` or `(=)`, which counts `mood_thought` times as much. `mood_neutral: 0` means a scene with no signal changes nothing (set it to `0.3` for slow drift up). Add `steady` to a stat line to make it always rise while the character is present (like `obsession`); `mood: off` restores that for every stat. Stats flagged `keep` survive `autostats` and `/autostats`.
 - `thoughts: on/off`, `thoughts_show: on` to see the thoughts in the story (by default they only live in Notes).
 - `clock: off`, `scene: off`, `clean: off` turn whole modules off.
 - `contact: on` enables the touch-consent module (characters may only touch the protagonist when the player writes it).

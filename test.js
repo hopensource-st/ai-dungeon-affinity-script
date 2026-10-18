@@ -42,6 +42,7 @@ const design = turn("You walk into the inn.",
 for (const t of ["config", "relations", "chronicle"]) assert(storyCards.some((c) => c.type === t), "auto card " + t);
 const cfgText = storyCards.find((c) => c.type === "config").description;
 assert(/^stat: suspicion \| manual/m.test(cfgText) && !/stat: trust/.test(cfgText), "designed stats replace defaults:\n" + cfgText);
+assert(/^stat: obsession | auto .*| steady | keep$/m.test(cfgText) && /^stages: obsession/m.test(cfgText), "obsession kept through autostats");
 assert(/^autostats: off$/m.test(cfgText) && /^tension_stat: affinity$/m.test(cfgText), "autostats turned off, tension follows");
 assert(/stats for this story are ready/.test(design) && !/suspicion/.test(design), "design stays a surprise: " + design);
 assert(G.history[0].text === "You walk into the inn.", "player action kept");
@@ -113,5 +114,11 @@ assert(!/keeps coming up/.test(replies[0] + replies[1]) && /\[LW: Vex keeps comi
 assert(!/keeps coming up/.test(replies[3]), "hint only once");
 assert(!replies.some((r) => /(Mira|Monday|Captain) keeps/.test(r)), "known names, weekdays and titles ignored");
 assert(storyCards.length === nCards, "no card created");
+
+// obsession: 0 and silent for ordinary characters, steady growth for a yandere card
+storyCards[1].description = "[cfg obsession:0.3]";
+for (let i = 0; i < 5; i++) turn("I wave.", "Tobin and Mira look up, turn " + i + ".");
+assert(G.state.lw.rel["1"].s.obsession === 0, "Mira (ordinary) stays at 0");
+assert(G.state.lw.rel["2"].s.obsession > 1, "Tobin (yandere) grows: " + G.state.lw.rel["2"].s.obsession);
 
 console.log("ok");
