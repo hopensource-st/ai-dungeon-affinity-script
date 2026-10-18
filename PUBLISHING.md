@@ -59,7 +59,11 @@ TIPS
 • Keep your own character out: add "skip: YourName" to the LW Config card.
 • A yandere: put [cfg obsession:0.3] in that character's card Notes.
 • Using another script that also writes Front Memory? Add "inject: text" to LW Config.
-• Full guide and source: github.com/hopensource-st/ai-dungeon-affinity-script
+
+WHAT'S NEW IN 1.0.1
+• Commands now work in Do and Say mode, not only in Story mode.
+
+Full guide and source code: https://github.com/hopensource-st/ai-dungeon-affinity-script
 ```
 
 ### Etiquetas sugeridas
