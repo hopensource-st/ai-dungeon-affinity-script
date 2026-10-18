@@ -144,4 +144,13 @@ turn("I wait.", "Time passes for Mira.");
 assert(/Recently: \(Day \d+\) /.test(G.state.memory.frontMemory) && !/\[Day/.test(G.state.memory.frontMemory.slice(1)), "chronicle sent with clean dates");
 assert(!Wc.log.some((l) => / is now [^.]* of\.$/.test(l)), "threshold lines keep their full text");
 
+// feelings line: only stages that moved from the character's start, so no "indifferent" next to "preoccupied"
+const rT = G.state.lw.rel["2"], rM = G.state.lw.rel["1"];
+rT.s.affinity = 1; rT.s.trust = 2; rT.s.obsession = 2.5;
+rM.s.affinity = 1; rM.s.trust = 3.5; rM.s.attraction = 0; rM.s.obsession = 0;
+turn("I talk with Tobin and Mira.", "Tobin and Mira glance over, again.");
+const fm = G.state.memory.frontMemory;
+assert(/Tobin: [^.]*preoccupied/.test(fm) && /Tobin: [^.]*wary of the protagonist/.test(fm), "moved stages only: " + fm);
+assert(!/indifferent/.test(fm) && !/Mira: /.test(fm), "unchanged characters send nothing");
+
 console.log("ok");

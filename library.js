@@ -582,11 +582,11 @@ const LW = (() => {
     for (const id of ids) {
       const ch = X.byId[id], r = L.rel[id];
       if (!ch || !r) continue;
-      const norm = (x) => (x.v - x.d.min) / ((x.d.max - x.d.min) || 1);
+      // only feelings that moved away from where this character started; the biggest change first
       const bits = activeStats(X, ch)
-        .map((d) => ({ d, v: r.s[d.name], t: stageText(X, d.name, r.s[d.name]) }))
-        .filter((x) => x.t)
-        .sort((a2, b2) => norm(b2) - norm(a2))
+        .map((d) => ({ t: stageText(X, d.name, r.s[d.name]), moved: Math.abs(stageIdx(X, d.name, r.s[d.name]) - stageIdx(X, d.name, startOf(d, ch))) }))
+        .filter((x) => x.t && x.moved)
+        .sort((a2, b2) => b2.moved - a2.moved)
         .slice(0, s.max_stats)
         .map((x) => x.t);
       if (bits.length) add(1, ch.name + ": " + bits.join("; ") + ".");
