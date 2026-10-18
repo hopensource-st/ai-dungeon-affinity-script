@@ -7,7 +7,7 @@ How to use: create each card in the scenario editor under Story Cards. Set the c
 - `Notes:` goes in the Notes field of the card. The engine keeps all of its numbers here, and Notes are never sent to the AI.
 - `Entry:` (or the lines after Triggers, when there is no Entry heading) goes in the Entry field. This is the only text the AI reads.
 
-Entry is limited to 1000 characters; Notes has no limit. If your editor has no Notes field, put the Notes line at the end of the Entry instead. The engine detects this and works either way, and removes it from the text sent to the AI.
+Entry is limited to 1000 characters; Notes has no limit.
 
 The `[cfg ...]` line in Notes holds that character's engine settings. The engine adds a `<<LW ... LW>>` block of numbers under it by itself and keeps it updated. You can edit those numbers by hand and the engine adopts them.
 
@@ -201,7 +201,7 @@ beat: 3 | fixed | Aftermath | when: flag:choice_made | guide: Show the consequen
 
 ## Protagonist card (Type: Character)
 
-Put this in the Notes field of your existing protagonist card (or at the end of its Entry if there is no Notes field) so the engine ignores it:
+Put this in the Notes field of your existing protagonist card so the engine ignores it:
 
 ```
 [cfg skip]

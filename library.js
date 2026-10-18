@@ -193,7 +193,7 @@ const LW = (() => {
     const cfgCards = (storyCards || []).filter((c) => c && String(c.type || "").toLowerCase() === "config");
     if (!cfgCards.length) return cfg;
     const stats = [], stages = {}, bans = [];
-    const cfgText = cfgCards.map((c) => String(c.entry || "") + "\n" + (typeof c.description === "string" ? c.description : "")).join("\n");
+    const cfgText = cfgCards.map((c) => String(c.entry || "") + "\n" + String(c.description || "")).join("\n");
     for (const raw of cfgText.split("\n")) {
       const line = raw.trim();
       if (!line || line[0] === "#") continue;
@@ -265,8 +265,7 @@ const LW = (() => {
       const title = String(c.title || "").trim();
       if (String(c.type || "").toLowerCase() !== "character" && title[0] !== "@") return;
       const entry = String(c.entry || "");
-      const notes = typeof c.description === "string";          // card has a Notes field
-      const cfg = parseCardCfg(notes && CFGRE.test(c.description) ? c.description : entry);
+      const cfg = parseCardCfg(CFGRE.test(c.description || "") ? c.description : entry);
       if (cfg.flags.skip) return;
       const keys = String(c.keys || "").split(",").map((k) => k.trim()).filter((k) => k.length >= 3 && /^[\p{L}'’ .\-]+$/u.test(k));
       const name = (title.replace(/^@/, "").replace(/\s*[([].*$/, "").trim() || keys[0] || strip(entry).split(/[,.:\n]/)[0]).trim();
@@ -276,7 +275,7 @@ const LW = (() => {
       const aliases = (cfg.vals.alias || "").split("/").map((a) => a.replace(/_/g, " ").trim()).filter((a) => a.length >= 3);
       const names = Array.from(new Set([name, first].concat(keys, aliases)));
       const re = new RegExp("\\b(?:" + names.map(esc).join("|") + ")\\b", "gi");
-      out.push({ id: String(c.id != null ? c.id : idx), idx, card: c, entry, notes, cfg, name, first, names, re });
+      out.push({ id: String(c.id != null ? c.id : idx), idx, card: c, entry, cfg, name, first, names, re });
     });
     return out;
   };
@@ -299,8 +298,7 @@ const LW = (() => {
       const c = storyCards.find((x) => x && x.keys === a.key);
       if (!c) continue;
       c.title = a.title;
-      if (typeof c.description === "string") c.description = a.notes();
-      else c.entry = a.notes();                        // no Notes field: the trigger never fires, so the AI never reads it
+      c.description = a.notes();
     }
   };
 
@@ -394,7 +392,7 @@ const LW = (() => {
 
   // numbers live in the card's Notes (never sent to the AI); old-style entry blocks are still read
   const getBlock = (ch) => {
-    const src = ch.notes && BLOCK.test(ch.card.description) ? ch.card.description : ch.entry;
+    const src = BLOCK.test(ch.card.description || "") ? ch.card.description : ch.entry;
     const m = src.match(BLOCK);
     return m ? m[0] : "";
   };
@@ -418,20 +416,14 @@ const LW = (() => {
     const r = L.rel[ch.id];
     if (!r) return;
     const text = blockText(X, ch, r);
-    if (getBlock(ch) === text && !(ch.notes && BLOCK.test(ch.entry))) { L.mirror[ch.id] = text; return; }
-    if (ch.notes) {
-      // Notes mode: entry stays purely what the AI reads; numbers go in the Notes field
-      const own = String(ch.card.description || "");
-      const cfgInNotes = (own.match(CFGRE) || [""])[0];
-      ch.card.description = [strip(own), cfgInNotes, text].filter(Boolean).join("\n");
-      if (BLOCK.test(ch.entry)) {                              // migrate an old entry block away
-        ch.card.entry = ch.entry.replace(BLOCK, "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
-        ch.entry = ch.card.entry;
-      }
-    } else {
-      const entry = strip(ch.entry) + (ch.cfg.raw ? "\n" + ch.cfg.raw : "") + "\n" + text;
-      updateStoryCard(ch.idx, ch.card.keys, entry, ch.card.type);
-      ch.entry = entry;
+    if (getBlock(ch) === text && !BLOCK.test(ch.entry)) { L.mirror[ch.id] = text; return; }
+    // the entry stays purely what the AI reads; numbers go in the Notes field
+    const own = String(ch.card.description || "");
+    const cfgInNotes = (own.match(CFGRE) || [""])[0];
+    ch.card.description = [strip(own), cfgInNotes, text].filter(Boolean).join("\n");
+    if (BLOCK.test(ch.entry)) {                                // migrate an old entry block away
+      ch.card.entry = ch.entry.replace(BLOCK, "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+      ch.entry = ch.card.entry;
     }
     L.mirror[ch.id] = text;
   };
@@ -466,7 +458,7 @@ const LW = (() => {
   const parseTies = (X) => {
     const ties = {}, warn = [];
     for (const rc of X.relCards) {
-      const txt = String(rc.c.entry || "") + "\n" + (typeof rc.c.description === "string" ? rc.c.description : "");
+      const txt = String(rc.c.entry || "") + "\n" + String(rc.c.description || "");
       for (const raw of txt.replace(RELBLOCK, "").split("\n")) {
         const line = raw.trim();
         if (!line || line[0] === "#" || /^bond\s*:/i.test(line)) continue;
@@ -485,7 +477,7 @@ const LW = (() => {
     const x = X.relCards[0];
     if (!x) return "";
     const c = x.c;
-    const src = typeof c.description === "string" && RELBLOCK.test(c.description) ? c.description : String(c.entry || "");
+    const src = String(c.description || "");
     const m = src.match(RELBLOCK);
     return m ? m[0] : "";
   };
@@ -525,15 +517,13 @@ const LW = (() => {
     if (text === cur || (empty && !cur)) { L.tmirror = cur || text; return; }
     const c = x.c;
     const clean = (v) => String(v || "").replace(RELBLOCK, "").replace(/\n{3,}/g, "\n\n").trim();
-    if (typeof c.description === "string") c.description = clean(c.description) + "\n" + text;
-    else updateStoryCard(x.idx, c.keys, clean(c.entry) + "\n" + text, c.type);
+    c.description = clean(c.description) + "\n" + text;
     L.tmirror = text;
   };
 
   const writeTie = (X, a, b, desc) => {
     const x = X.relCards[0], c = x.c;
-    const notes = typeof c.description === "string";
-    const lines = String(notes ? c.description : c.entry || "").split("\n");
+    const lines = String(c.description || "").split("\n");
     const line = a.first + " | " + b.first + " | " + desc;
     let done = false;
     for (let i = 0; i < lines.length; i++) {
@@ -548,7 +538,7 @@ const LW = (() => {
       if (bi >= 0) lines.splice(bi, 0, line); else lines.push(line);
     }
     const out = lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
-    if (notes) c.description = out; else updateStoryCard(x.idx, c.keys, out, c.type);
+    c.description = out;
   };
 
   // ---- text for the AI ------------------------------------------------------
@@ -769,11 +759,9 @@ const LW = (() => {
     const ch = pc.ch;
     if (pc.cmd === "peek") return "";   // filled in by onInput once the line for this action is built
     if (pc.cmd === "check") {
-      const withNotes = X.roster.filter((c) => c.notes).length;
       const cfgCards = (storyCards || []).filter((c) => c && String(c.type || "").toLowerCase() === "config").length;
       const d = L.dbg;
-      return "Characters " + X.roster.length + " (Notes field: " + (X.roster.length ? (withNotes === X.roster.length ? "yes" : withNotes ? "some" : "no, using Entry") : "n/a") +
-        "). Config cards " + cfgCards + ". Relations cards " + X.relCards.length + ", ties " + Object.keys(X.ties).length +
+      return "Characters " + X.roster.length + ". Config cards " + cfgCards + ". Relations cards " + X.relCards.length + ", ties " + Object.keys(X.ties).length +
         (X.tieWarn.length ? " (" + X.tieWarn.length + " unresolved)" : "") + ". Inject: " + X.cfg.s.inject + ". Events " + X.ev.length + ", arc beats " + X.arc.beats.length + (X.arc.beats.length ? " (act " + L.w.act + " of " + X.arc.maxAct + ")" : "") +
         ", Chronicle card " + (chrCard() ? "yes" : "no") + ", unreadable conditions " + countBadConds(X, L) + ". " +
         (d ? "Last context (action " + d.turn + "): " + d.chars + " chars, " + d.stripped + " hidden marker(s) removed, injected line found: " + (d.injected ? "yes" : "no") + "." +
@@ -828,7 +816,7 @@ const LW = (() => {
     return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   };
   const cardsOf = (type) => (storyCards || []).filter((c) => c && String(c.type || "").toLowerCase() === type);
-  const cardText = (c) => String(c.entry || "") + "\n" + (typeof c.description === "string" ? c.description : "");
+  const cardText = (c) => String(c.entry || "") + "\n" + String(c.description || "");
   const FIELD = /^(when|stages|hold|sets|log|guide|who)\s*:\s*/i;
   const parseFields = (v) => {
     const pos = [], f = {};
@@ -962,7 +950,7 @@ const LW = (() => {
     const i = (storyCards || []).findIndex((c) => c && String(c.type || "").toLowerCase() === "chronicle");
     return i < 0 ? null : { c: storyCards[i], idx: i };
   };
-  const chrSource = (x) => (typeof x.c.description === "string" ? x.c.description : String(x.c.entry || ""));
+  const chrSource = (x) => String(x.c.description || "");
   const chrParse = (txt) => {
     const log = [];
     for (const raw of String(txt).replace(WBLOCK, "").split("\n")) {
@@ -1023,8 +1011,7 @@ const LW = (() => {
     W.add = [];
     const text = [own, all.map((l) => "- " + l).join("\n"), wBlockText(X, W)].filter(Boolean).join("\n");
     if (text === srcNow.trim()) { L.wm = text; return; }
-    if (typeof x.c.description === "string") x.c.description = text;
-    else updateStoryCard(x.idx, x.c.keys, text, x.c.type);
+    x.c.description = text;
     L.wm = text;
   };
   const addLog = (X, W, text) => {
@@ -1232,7 +1219,7 @@ const LW = (() => {
   const stageIdx = (X, name, v) => { let n = 0; for (const e of X.cfg.stages[name] || []) if (v >= e[0]) n++; return n; };
   const thSig = (X, ch, r) => activeStats(X, ch).map((d) => stageIdx(X, d.name, r.s[d.name])).join(",");
   const getBases = (ch) => {
-    const src = ch.notes ? String(ch.card.description || "") : ch.entry;
+    const src = String(ch.card.description || "");
     return src.split("\n").map((l) => { const m = l.match(/^\s*base:\s*(.+)$/i); return m ? m[1].trim() : ""; }).filter(Boolean);
   };
   const planThoughts = (X, L, ids, turn) => {
@@ -1333,7 +1320,7 @@ const LW = (() => {
   // every thought also goes to a diary in the card's Notes ("~ (Day 3) text"): never sent to the AI and not kept in state
   const diary = (X, ch, text) => {
     const max = num(X.cfg.s.thoughts_diary, 0);
-    if (!ch.notes || max <= 0) return;
+    if (max <= 0) return;
     const lines = String(ch.card.description || "").split("\n");
     lines.push("~ (Day " + S().w.day + ") " + String(text).replace(/\s+/g, " "));
     let extra = lines.filter((l) => /^~ /.test(l)).length - max;
@@ -1345,12 +1332,8 @@ const LW = (() => {
     vals[key] = val;
     const flags = Object.keys(ch.cfg.flags);
     const raw = "[cfg " + flags.concat(Object.keys(vals).map((k) => k + ":" + vals[k])).join(" ") + "]";
-    if (ch.notes) {
-      const d = String(ch.card.description || "");
-      ch.card.description = CFGRE.test(d) ? d.replace(CFGRE, raw) : raw + "\n" + d;
-    } else {
-      updateStoryCard(ch.idx, ch.card.keys, CFGRE.test(ch.entry) ? ch.entry.replace(CFGRE, raw) : ch.entry + "\n" + raw, ch.card.type);
-    }
+    const d = String(ch.card.description || "");
+    ch.card.description = CFGRE.test(d) ? d.replace(CFGRE, raw) : raw + "\n" + d;
     ch.cfg.vals = vals; ch.cfg.raw = raw;
   };
 
@@ -1444,10 +1427,9 @@ const LW = (() => {
   const writeCfg = (statLines, sets, keep) => {
     const c = cardsOf("config")[0];
     if (!c) return;
-    const f = typeof c.description === "string" && (c.description.trim() || !String(c.entry || "").trim()) ? "description" : "entry";
     const out = [], done = {};
     let at = -1, last = -1;
-    for (const l of String(c[f] || "").split("\n")) {
+    for (const l of String(c.description || "").split("\n")) {
       const m = l.match(/^\s*(stat|stages)\s*:\s*([^|]*)/i);
       const nm = m ? m[2].trim().toLowerCase() : "";
       if (m && !(m[1].toLowerCase() === "stages" && nm === "tension") && !(keep || []).includes(nm)) { if (at < 0) at = out.length; continue; }
@@ -1458,8 +1440,7 @@ const LW = (() => {
     out.splice(at >= 0 ? at : last >= 0 ? last : out.length, 0, ...statLines);
     for (const k of Object.keys(sets)) if (!done[k]) out.push(k + ": " + sets[k]);
     const text = out.join("\n");
-    if (f === "description") c.description = text;
-    else updateStoryCard(storyCards.indexOf(c), c.keys, text, c.type);
+    c.description = text;
   };
 
   const handleStats = (X, L, body) => {
@@ -1504,13 +1485,10 @@ const LW = (() => {
       }
       return "[LW: A card for " + cr.name + " already exists, nothing was created.]";
     }
-    const notesMode = (storyCards || []).some((c) => c && typeof c.description === "string");
-    const cfgLine = kind.type === "character" ? "[cfg]" : "";
-    const res = addStoryCard(keys, notesMode || !cfgLine ? entry : entry + "\n" + cfgLine, kind.type);
+    const res = addStoryCard(keys, entry, kind.type);
     if (res === false) return "[LW: Could not create the card for " + cr.name + " (duplicate triggers).]";
-    if (notesMode && cfgLine) {
-      for (let i = storyCards.length - 1; i >= 0; i--) if (storyCards[i] && storyCards[i].keys === keys) { storyCards[i].description = cfgLine; break; }
-    }
+    if (kind.type === "character")
+      for (let i = storyCards.length - 1; i >= 0; i--) if (storyCards[i] && storyCards[i].keys === keys) { storyCards[i].description = "[cfg]"; break; }
     L.made = L.made || {};
     L.made[cr.name.toLowerCase()] = turn;
     let tiesNote = "";
@@ -1802,7 +1780,7 @@ const LW = (() => {
       L.tension = clone(L.applied.tension || {});
       if (L.applied.w) L.w = clone(L.applied.w);
       const x = chrCard();                                  // entries appended by the retried reply come out of the card
-      if (x && L.applied.chr != null && typeof x.c.description === "string") { x.c.description = L.applied.chr; L.wm = L.applied.chr.trim(); }
+      if (x && L.applied.chr != null) { x.c.description = L.applied.chr; L.wm = L.applied.chr.trim(); }
       sync(X, L);
       ensureW(L.w);
     } else {
