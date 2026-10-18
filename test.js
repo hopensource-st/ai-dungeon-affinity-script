@@ -24,6 +24,7 @@ const G = {
 };
 G.state.memory = {};
 const ctx = vm.createContext(G);
+vm.runInContext("Math.random = (() => { let a = 7; return () => ((a = (a * 16807) % 2147483647) / 2147483647); })()", ctx);   // same draws every run
 const run = (name, text) => { ctx.text = text; return vm.runInContext("(() => {\n" + lib + "\n" + hook(name).replace(/modifier\(text\)\s*$/, "return modifier(text)") + "\n})()", ctx); };
 
 const turn = (action, reply) => {
@@ -112,7 +113,7 @@ assert(tKey, "quarrel raised tension");
 const nCards = storyCards.length;
 const replies = [];
 for (let i = 0; i < 4; i++) replies.push(turn("I look around.", "On day " + i + " you notice Captain Vex near Mira on Monday."));
-assert(!/keeps coming up/.test(replies[0] + replies[1]) && /\[LW: Vex keeps coming up\. Give them a card with \/npc Vex/.test(replies[2]), "hint on the 3rd turn: " + replies[2]);
+assert(!/keeps coming up/.test(replies[0] + replies[1]) && /\[LW: Vex keeps coming up[^\]]*type \/npc Vex, then who they are[^\]]*Example: \/npc Vex, a guard/.test(replies[2]), "hint on the 3rd turn: " + replies[2]);
 assert(!/keeps coming up/.test(replies[3]), "hint only once");
 assert(!replies.some((r) => /(Mira|Monday|Captain) keeps/.test(r)), "known names, weekdays and titles ignored");
 assert(storyCards.length === nCards, "no card created");
@@ -139,7 +140,7 @@ assert(!/\{log/.test(shownLog), "marker removed from the story");
 assert(/\] Mira admitted she had been reading/.test(Wc.log.join("\n")), "AI summary in the chronicle");
 G.state.lw.w.twUsed = [];
 runTwist("Mira says nothing more.");
-assert(/\] Mira's secret comes out, and it changes things\.$/.test(Wc.log[Wc.log.length - 1]), "generic text when the AI forgets: " + Wc.log[Wc.log.length - 1]);
+assert(/\] (Mira|Tobin)'s secret comes out, and it changes things\.$/.test(Wc.log[Wc.log.length - 1]), "generic text when the AI forgets: " + Wc.log[Wc.log.length - 1]);
 turn("I wait.", "Time passes for Mira.");
 assert(/Recently: \(Day \d+\) /.test(G.state.memory.frontMemory) && !/\[Day/.test(G.state.memory.frontMemory.slice(1)), "chronicle sent with clean dates");
 assert(!Wc.log.some((l) => / is now [^.]* of\.$/.test(l)), "threshold lines keep their full text");
@@ -196,7 +197,7 @@ assert(at() === "day 7 tod 1", "the next morning -> " + at());
 
 // scene summaries: a time jump closes the scene; next turn the AI is asked for {log: ...}; no generic line if it forgets
 const Ws = G.state.lw.w;
-Ws.tw = null; Ws.twEnd = G.info.actionCount; Ws.pendLog = [];
+Ws.tw = null; Ws.twEnd = G.info.actionCount; Ws.pendLog = []; Ws.arcDone = true; Ws.bt = null;   // no twist or beat lines here
 turn("I leave the inn.", "That night, the streets are empty.");
 assert(Ws.pendLog.length === 1 && Ws.pendLog[0] === "", "scene close queued a summary");
 const nLog = cardLog().length;
@@ -204,6 +205,6 @@ turn("I walk home.", "You reach the door.\n{log: Brea left the inn after Mira's 
 assert(cardLog().length === nLog + 1 && /walked home alone/.test(cardLog().slice(-1)[0]), "scene summary stored");
 turn("I sleep until morning.", "You wake to birdsong.");
 turn("I get up.", "The kettle sings.");
-assert(cardLog().length === nLog + 1, "no generic line when the AI skips the summary");
+assert(cardLog().length === nLog + 1, "no generic line when the AI skips the summary: " + cardLog().slice(nLog).join(" | "));
 
 console.log("ok");

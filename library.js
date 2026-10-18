@@ -1692,7 +1692,9 @@ const LW = (() => {
     const hit = Object.keys(L.nm).find((n) => L.nm[n][0] >= s.suggest_after && !n.split(" ").some((w) => known.has(w.toLowerCase())));
     if (!hit) return "";
     L.sug[hit] = turn;
-    return "[LW: " + hit + " keeps coming up. Give them a card with /npc " + hit + ", or /place or /faction if it is not a person.]";
+    return "[LW: " + hit + " keeps coming up but has no card, so the engine does not track them. To add one, type /npc " + hit +
+      ", then who they are in a few words. Example: /npc " + hit + ", a guard who owes you a favor. The next reply becomes the card." +
+      " Not a person? Use /place " + hit + ", ... or /faction " + hit + ", ... the same way. To stop this note, add " + hit + " to skip: in the Config card.]";
   };
 
   // ---- hooks ----------------------------------------------------------------

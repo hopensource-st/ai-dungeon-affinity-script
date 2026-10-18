@@ -48,7 +48,7 @@ Each tracked card gets a `<<LW ... LW>>` block in its Notes with its numbers and
 
 No character cards in the scenario? Create them as you play: `/npc Mira, the innkeeper who knows every rumor`. The AI's next reply becomes the card.
 
-Cards are never created on their own. When the AI keeps using a name that has no card (in `suggest_after: 3` different turns), the engine hints once: `[LW: Vex keeps coming up. Give them a card with /npc Vex...]`. Ignore it, or add the name to `skip:`. `suggest_cards: off` disables the hints.
+Cards are never created on their own. When the AI keeps using a name that has no card (in `suggest_after: 3` different turns), the engine hints once, with the command and an example: `[LW: Vex keeps coming up but has no card... type /npc Vex, then who they are in a few words. Example: /npc Vex, a guard who owes you a favor...]`. Ignore it, or add the name to `skip:`. `suggest_cards: off` disables the hints.
 
 ## Per-character settings
 
