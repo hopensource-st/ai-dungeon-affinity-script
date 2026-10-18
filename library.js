@@ -46,6 +46,8 @@ const LW = (() => {
       twists: true, twist_gap: 8, twist_chance: 25, twist_hold: 3,
       // bonds: the first time two characters with no written tie share a scene, bond_chance % of drawing one from the Relations deck
       bonds: true, bond_chance: 70,
+      // suggest_cards: a name with no card that comes up in suggest_after different turns gets a one-time hint to /npc it
+      suggest_cards: true, suggest_after: 3,
       // mood: auto stats rise after a positive interaction and fall after a negative one (stats flagged steady always rise)
       mood: true, mood_neutral: 0, mood_down: 1, mood_thought: 2.5,
       mood_pos: "thank|smil|laugh|grin|help|hug|embrac|kiss|gift|prais|compliment|comfort|protect|forgiv|apologi|agree|welcom|reassur|kind|gentl|chuckl|blush",
@@ -1644,6 +1646,38 @@ const LW = (() => {
     return { note: "" };
   };
 
+  // ---- names with no card: hint the player to make one (cards are never created on their own) ----
+  // ponytail: a proper noun is a capitalized word mid-sentence; names only ever seen at a sentence start are missed
+  const TITLES = new Set(("i i'm i'll i've i'd mr mrs ms dr sir lady lord captain king queen prince princess master mistress " +
+    "god gods oh ah ok okay monday tuesday wednesday thursday friday saturday sunday january february march april may june july " +
+    "august september october november december").split(" "));
+  const suggestCard = (X, L, body, turn) => {
+    const s = X.cfg.s;
+    if (!s.suggest_cards) return "";
+    L.nm = L.nm || {}; L.sug = L.sug || {};
+    const known = new Set();
+    const addWords = (t) => { for (const w of String(t).toLowerCase().replace(/^@/, "").split(/[\s,|]+/)) if (w) known.add(w); };
+    for (const c of storyCards || []) if (c) { addWords(c.keys || ""); addWords(c.title || ""); }
+    addWords(s.skip || "");
+    Object.keys(L.sug).forEach(addWords);
+    const here = new Set(), re = /\b[A-Z][a-z'’]+(?: [A-Z][a-z'’]+)?\b/g;
+    let m;
+    while ((m = re.exec(body)) !== null) {
+      const pre = body.slice(0, m.index);
+      if (/(?:^|[.!?"“”«»:—…]|\n)\s*$/.test(pre)) continue;                 // sentence or line start
+      const words = m[0].replace(/['’]s$/, "").split(" ");
+      while (words.length && TITLES.has(words[0].toLowerCase())) words.shift();  // "Captain Vex" -> "Vex"
+      if (words.length && !words.some((w) => known.has(w.toLowerCase()))) here.add(words.join(" "));
+    }
+    for (const n of here) { const e = L.nm[n] || (L.nm[n] = [0, -1]); if (e[1] !== turn) { e[0]++; e[1] = turn; } }
+    const names = Object.keys(L.nm);
+    if (names.length > 150) names.sort((a, b) => L.nm[a][0] - L.nm[b][0]).slice(0, names.length - 100).forEach((n) => delete L.nm[n]);
+    const hit = Object.keys(L.nm).find((n) => L.nm[n][0] >= s.suggest_after && !n.split(" ").some((w) => known.has(w.toLowerCase())));
+    if (!hit) return "";
+    L.sug[hit] = turn;
+    return "[LW: " + hit + " keeps coming up. Give them a card with /npc " + hit + ", or /place or /faction if it is not a person.]";
+  };
+
   // ---- hooks ----------------------------------------------------------------
   const onInput = (text) => {
     ensureCards();
@@ -1902,6 +1936,8 @@ const LW = (() => {
     let out = body;
     if (warned.length && X.cfg.s.warn_touch)
       out += "\n\n[LW: possible touch by " + warned.join(", ") + " without permission.]";
+    const sug = suggestCard(X, L, body, turn);
+    if (sug) out += "\n\n" + sug;
     if (L.err) { out += "\n\n[LW error: " + String(L.err).replace(/\]/g, ")") + "]"; L.err = null; }
     if (!out.trim()) out = "​";
     return { text: out };

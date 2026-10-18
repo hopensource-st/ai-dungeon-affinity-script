@@ -105,4 +105,13 @@ assert(new RegExp(tie.slice(0, 20).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).test(
 const tKey = Object.keys(G.state.lw.tension).find((k) => G.state.lw.tension[k] > 0);
 assert(tKey, "quarrel raised tension");
 
+// names with no card: one hint after 3 different turns, never for known cards, titles or weekdays, never a card made
+const nCards = storyCards.length;
+const replies = [];
+for (let i = 0; i < 4; i++) replies.push(turn("I look around.", "On day " + i + " you notice Captain Vex near Mira on Monday."));
+assert(!/keeps coming up/.test(replies[0] + replies[1]) && /\[LW: Vex keeps coming up\. Give them a card with \/npc Vex/.test(replies[2]), "hint on the 3rd turn: " + replies[2]);
+assert(!/keeps coming up/.test(replies[3]), "hint only once");
+assert(!replies.some((r) => /(Mira|Monday|Captain) keeps/.test(r)), "known names, weekdays and titles ignored");
+assert(storyCards.length === nCards, "no card created");
+
 console.log("ok");
