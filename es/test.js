@@ -98,6 +98,10 @@ assert.strictEqual(tUlt(1), "t: La bodega no se llena sola. Esa mirada dice que 
 assert.strictEqual(tUlt(2), "t: Ya planea retenerte aquí. No me gusta.");
 assert(/^Inés te observa un momento, tamborileando en la barra\.$/.test(una.trim()), "narración conservada: " + una);
 
+// un {log: sin llave de cierre también se guarda y sale de la historia
+const abierto = turn("Espero.", "Inés asiente.\n{log: Inés prometió guardar el secreto.");
+assert(!/\{log/.test(abierto) && G.state.lw.w.log.some((l) => /Inés prometió guardar el secreto/.test(l)), "log sin cerrar: " + abierto);
+
 // recuerdos: una entrada de la crónica que nombra a Inés se queda en sus Notes y vuelve cuando la crónica ya ha avanzado
 turn("Espero.", "Inés suspira. {log: Inés perdonó a la protagonista por la jarra rota.}");
 assert(/^m: \(Día \d+\) Inés perdonó a la protagonista por la jarra rota\.$/m.test(notes(1)), "recuerdo en las Notes de Inés:\n" + notes(1));

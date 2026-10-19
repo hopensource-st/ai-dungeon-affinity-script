@@ -93,6 +93,7 @@ for (let i = 0; i < 40; i++) {
 const W = G.state.lw.w;
 assert(W.twUsed.length >= 1 && told >= 1, "a twist was drawn and injected");
 assert(W.fired.inciting_incident != null, "arc reached its first beat");
+assert(W.act === 1 || W.actAt >= 30, "act 2 waits for act_turns: " + W.actAt);
 assert(/Mira/.test(run("input", "/twists").text) === false && /secret/.test(run("input", "/twists").text), "/twists lists the deck");
 
 // bonds: Mira and Tobin share a scene for the first time and get a tie from the deck; a quarrel raises their tension
@@ -259,6 +260,10 @@ const tLast = (id) => storyCards.find((c) => c.id === id).description.split("\n"
 assert.strictEqual(tLast(1), "t: The cellar won't fill itself. That look says the protagonist will stay late again.");
 assert.strictEqual(tLast(2), "t: She's already planning to keep you here. I don't like this.");
 assert(/^Mira considers you for a moment, her fingers drumming on the bar\.$/.test(one.trim()), "narration kept: " + one);
+
+// a {log: with no closing brace is still logged, and leaves the story
+const unclosed = turn("I wait.", "Mira nods.\n{log: Mira agreed to keep the secret.");
+assert(!/\{log/.test(unclosed) && G.state.lw.w.log.some((l) => /Mira agreed to keep the secret/.test(l)), "unclosed log: " + unclosed);
 
 // memories: a chronicle entry that names a character stays in their Notes, and comes back once the chronicle has moved on
 turn("I wait.", "Mira sighs. {log: Mira forgave the protagonist for the broken mug.}");

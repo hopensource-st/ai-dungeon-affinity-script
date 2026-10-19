@@ -82,7 +82,7 @@ const LW = (() => {
       scene_mid: "Escena: complicación. Algo sale mal, se dice o se descubre.",
       scene_end: "Escena: clímax. Llévala a su punto álgido y ciérrala con un gancho.",
       scene_over: "Escena: se alarga. Ciérrala con un cambio de hora o de lugar.",
-      beat_hold: 4, beat_gap: 3, event_hold: 3, events_max: 2, arc_mode: "hybrid",
+      beat_hold: 4, beat_gap: 3, act_turns: 30, event_hold: 3, events_max: 2, arc_mode: "hybrid",
       inject_max: 1300, clean: true, clean_repeat: true, max_entry: 1000,
       npc_template: "Nombre Completo, papel u oficio, edad. Tres rasgos de carácter. [dos o tres frases: cómo ve al protagonista, qué quiere, un defecto]. Aspecto: [una frase sobre complexión, pelo, ojos y ropa].",
       faction_template: "Nombre de la Facción, qué clase de grupo es. [dos o tres frases: qué quieren, quién los dirige, cómo tratan al protagonista]. Aspecto: [una frase sobre cómo visten o se reconocen sus miembros].",
@@ -1232,9 +1232,10 @@ const LW = (() => {
       else if (cx.turn - W.bt.at >= (b.hold || A.hold)) fireBeat(X, L, b, cx);
     }
     const q = W.q[W.act];
-    if (!W.bt && actDone(W, q)) {
+    // act_turns: un acto dura al menos esos turnos aunque sus momentos acaben antes (los momentos de banco y los giros llenan la espera)
+    if (!W.bt && actDone(W, q) && cx.turn - (W.actAt || 0) >= X.cfg.s.act_turns) {
       if (W.act >= A.maxAct) { W.arcDone = true; addLog(X, W, "El arco de la historia llega a su fin."); return; }
-      W.act++; W.btEnd = cx.turn;
+      W.act++; W.btEnd = cx.turn; W.actAt = cx.turn;
       buildQueue(X, L, A, W.act);
       const an = (A.acts[W.act] || {}).name;
       addLog(X, W, "Empieza el acto " + W.act + (an ? ": " + an : "") + ".");
@@ -1726,7 +1727,7 @@ const LW = (() => {
       if (sub === "act") {
         const n = parseInt(val, 10);
         if (!(n >= 1 && n <= A.maxAct)) return { note: "Usa /arco acto 1 a " + A.maxAct + "." };
-        W.act = n; W.bt = null; W.arcDone = false; W.btEnd = turn; buildQueue(X, L, A, n);
+        W.act = n; W.bt = null; W.arcDone = false; W.btEnd = turn; W.actAt = turn; buildQueue(X, L, A, n);
         return { note: "Pasamos al acto " + n + ". " + arcStatus(X, L) };
       }
       if (sub === "next") {
@@ -1934,14 +1935,18 @@ const LW = (() => {
 
     let body = text, logged = false;
     // markers the AI may write: {flag:x} {event:x} {beat} {log:text}
-    body = body.replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}]*))?\}/gi, (m, k, v) => {
+    const onMark = (m, k, v) => {
       const kind = k.toLowerCase(), val = String(v || "").trim();
       if (kind === "flag" && val) W.flags[slug(val)] = 1;
       else if (kind === "log" && val) { addLog(X, W, val); logged = true; }
       else if (kind === "event") { const e = X.ev.find((x) => x.id === slug(val)); if (e) startEvent(X, L, e, { turn }); }
       else if (kind === "beat" && W.bt) W.bt.at = -1000;
       return "";
-    }).replace(/[ \t]{2,}/g, " ").replace(/\s+$/, "");
+    };
+    // a veces la IA olvida la llave de cierre: entonces la marca llega hasta el final de su línea
+    body = body.replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}]*))?\}/gi, onMark)
+      .replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}\n]*))?$/gim, onMark)
+      .replace(/[ \t]{2,}/g, " ").replace(/\s+$/, "");
     // a twist or beat that ended last turn: the AI was asked for a {log:...}; without one, the generic text goes in
     if (W.pendLog.length) { if (!logged) W.pendLog.forEach((l) => addLog(X, W, l)); W.pendLog = []; }
 

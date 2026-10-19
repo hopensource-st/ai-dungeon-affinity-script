@@ -66,6 +66,9 @@ memories_recent: 2
 memories_context: 2
 # random ties between characters with no written tie: rare, and only from the court deck in the Relations card
 bond_chance: 40
+# arc pace: each act lasts at least act_turns actions; beat_gap quiet actions between beats
+act_turns: 50
+beat_gap: 6
 # cleaner (writing any ban line replaces the default list)
 ban: barely above a whisper | very softly
 ban: sent shivers down her spine | made her shiver
@@ -168,7 +171,7 @@ act: 2 | The Spiral | The obsession deepens and the court begins to notice. Tens
 act: 3 | The Choice | The curse comes to a head. The protagonist decides whom to trust and who may touch them.
 beat: 1 | fixed | Eyes on You | when: action>=1 | guide: The first stares at court. Make the obsession feel invasive and wrong, never flattering. | sets: first_stares
 beat: 1 | fixed | The First Normal Person | when: flag:first_stares, met>=2 | guide: Someone who resists, or only shows quiet courtesy, stands out sharply (Rowan Hale or Tobin Wren). The protagonist feels a rare, wary relief. | sets: first_calm
-beat: 1 | fixed | The Gift | when: flag:first_calm, action>=25 | guide: A gift arrives that shows far too much knowledge of the protagonist. The sense of being watched grows. | sets: gift_received
+beat: 1 | fixed | The Gift | when: flag:first_calm, action>=40 | guide: A gift arrives that shows far too much knowledge of the protagonist. The sense of being watched grows. | sets: gift_received
 beat: 1 | bank | An Unwanted Escort | when: any obsession>=2 | guide: Someone insists on accompanying the protagonist everywhere, with a polite excuse that does not hold up.
 beat: 1 | bank | The Stolen Glance | when: met>=3, prob 25 | guide: The protagonist catches someone staring from across a room, and they do not look away.
 beat: 1 | bank | Kindness Without Hunger | when: any trust>=4 | guide: Someone shows the protagonist a small kindness that wants nothing back, and it is disarming.
@@ -177,7 +180,7 @@ beat: 2 | bank | Possessive Jealousy | when: any obsession>=5 | guide: Someone b
 beat: 2 | bank | The Near-Touch | when: any obsession>=6 | guide: Someone reaches out. The counter-spell stops them, and the scene turns eerie: the hand freezes and the air turns cold. The person is shaken and invents an explanation.
 beat: 2 | bank | A Genuine Moment | when: any trust>=5 | guide: A tender, sincere scene where trust is earned slowly. The protagonist doubts it even as they feel it.
 beat: 2 | bank | A Confession | when: any attraction>=7 trust>=6 | guide: Someone confesses sincerely, in words that sound unlike the curse's pleading. The protagonist cannot tell whether it is real, and must decide how to answer.
-beat: 2 | fixed | Midpoint, The Breach | when: flag:gift_received, action>=60 | guide: Witnesses see the counter-spell hold. Rumors of witchcraft begin. | sets: rumors
+beat: 2 | fixed | Midpoint, The Breach | when: flag:gift_received, action>=100 | guide: Witnesses see the counter-spell hold. Rumors of witchcraft begin. | sets: rumors
 beat: 2 | fixed | Blood Ties Surface | when: flag:blood_suspected | guide: The truth comes out: the King's guest is his child, and Cassian and Isolde are their half-siblings. Whoever learns it is torn between the fixation, shame, and the possibility that some of what they feel is real, and the King's pretense starts to crack. Handle it with weight, never as a casual line. The protagonist decides what, if anything, happens next. | sets: blood_ties_known
 beat: 2 | fixed | Cornered | when: flag:rumors, any obsession>=8 | guide: Someone consumed by the curse corners the protagonist with possessive pleading. Do not describe graphic violence. The protagonist's consent decides the outcome. | sets: cornered
 beat: 3 | bank | A Last Plea | when: any obsession>=8 | guide: Someone consumed by the curse makes one last desperate plea before the end.

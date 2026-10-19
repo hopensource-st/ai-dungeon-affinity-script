@@ -105,7 +105,7 @@ Tension between two characters rises when a sentence naming both has `mood_neg` 
 
 ### Twists, events and arc
 
-On the first turn the engine also creates **LW Events**, a deck of generic twists (a secret, a betrayal, a confession, a stranger, a mishap...), and **LW Arc**, a three-act arc whose fixed beats happen in order while its bank beats are drawn at random each playthrough. After `twist_gap` quiet turns, each turn has a `twist_chance` % chance of drawing a twist that fits the scene: `who: low` picks a present character who dislikes the protagonist, `high` one who likes them, `any` anyone present, `absent` someone already met who is not here. The AI is told to hint at it first, then to make it happen, in its own way for this story. It is never shown to the player; the chronicle records it afterwards.
+On the first turn the engine also creates **LW Events**, a deck of generic twists (a secret, a betrayal, a confession, a stranger, a mishap...), and **LW Arc**, a three-act arc whose fixed beats happen in order while its bank beats are drawn at random each playthrough. Each act lasts at least `act_turns: 30` actions, even when its beats are done sooner, and beats are at least `beat_gap: 3` actions apart. After `twist_gap` quiet turns, each turn has a `twist_chance` % chance of drawing a twist that fits the scene: `who: low` picks a present character who dislikes the protagonist, `high` one who likes them, `any` anyone present, `absent` someone already met who is not here. The AI is told to hint at it first, then to make it happen, in its own way for this story. It is never shown to the player; the chronicle records it afterwards.
 
 ```
 twist: secret | who: low | weight 2 | stages: {who} is hiding something >> {who}'s secret comes out
