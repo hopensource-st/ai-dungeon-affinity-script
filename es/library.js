@@ -2093,7 +2093,10 @@ const LW = (() => {
       for (let j = i + 1; j < ids.length; j++) {
         const A = X.byId[ids[i]], B = X.byId[ids[j]], key = pk(A.id, B.id);
         const va = L.rel[A.id].s[ts.tension_stat], vb = L.rel[B.id].s[ts.tension_stat];
-        let dt = va != null && vb != null && va >= ts.tension_min && vb >= ts.tension_min ? ts.tension_rate : 0;
+        // rivales: una vez por escena para cada pareja (se guarda en W para que un retry lo recupere)
+        W.tsk = W.tsk || {};
+        let dt = va != null && vb != null && va >= ts.tension_min && vb >= ts.tension_min && W.tsk[key] !== sceneKey ? ts.tension_rate : 0;
+        if (dt) W.tsk[key] = sceneKey;
         if (ts.mood) { const sc = moodScore(X, [A, B], body); dt += sc < 0 ? ts.tension_rate : sc > 0 ? -ts.tension_rate : 0; }
         if (dt) L.tension[key] = clamp((L.tension[key] || 0) + dt, 0, ts.tension_max);
         drawBond(X, L, A, B);

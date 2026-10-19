@@ -293,6 +293,13 @@ assert(G.state.lw.w.day === dayA + 1 && G.state.lw.rel["1"].touched.length === t
 const mid = turn("I wait.", "The bar is quiet. Then Mira thinks (-): Tobin forgot the kegs again. She wipes the counter.");
 assert(/^t: Tobin forgot the kegs again\.$/m.test(storyCards[0].description) && mid === "The bar is quiet. She wipes the counter.", "mid-paragraph unquoted: " + mid);
 
+// rivals: two characters who both like the protagonist grow tension once per scene, not on every turn
+run("input", "/scene");
+G.state.lw.rel["1"].s.affinity = 8; G.state.lw.rel["2"].s.affinity = 8;
+const ten = () => G.state.lw.tension["1|2"] || 0, ten0 = ten();
+for (let i = 0; i < 3; i++) turn("I sit down.", "Mira and Tobin sit at the table, turn " + i + ".");
+assert(Math.abs(ten() - ten0 - 0.5) < 0.01, "one rise in one scene: " + ten0 + " -> " + ten());
+
 // /think holds until the thought arrives: a reply that skips it does not cancel it
 run("input", "/think Mira");
 turn("I wait.", "Mira polishes a glass.");

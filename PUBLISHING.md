@@ -62,6 +62,10 @@ TIPS
 • Another script also writes Front Memory? The engine notices and sends its line another way. If characters still never think, add "inject: text" to LW Config.
 
 WHAT'S NEW IN 1.1.4
+• Continue no longer counts your last action twice (time jumps, mood, touches).
+• Rivalries between characters grow once per scene, like obsession.
+• More of the AI's variations are understood: thoughts with no quotes or in mid-paragraph, signs like (+1), tags like (Name: =), and logs with no key.
+• /think stays asked until that character actually thinks.
 • Obsession (and any steady stat) rises once per scene, not on every action. How you treat someone still counts on every action.
 • The arc takes its time: each act lasts at least 30 actions (act_turns).
 • Chronicle entries are no longer lost: the AI writes them on the first line of its reply, where they cannot be cut off, and one left unclosed is still saved.
