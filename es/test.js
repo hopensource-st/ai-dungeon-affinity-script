@@ -50,7 +50,10 @@ assert(G.state.lw.rel["1"].s.afinidad > 1, "la sonrisa sube la afinidad");
 // comandos en castellano, con y sin tildes, también en modo Do
 assert(/Inés pensará algo/.test(cmd("/pensar Ines")), "/pensar sin tilde");
 turn("Le pregunto a Inés por José.", "Inés se encoge de hombros.");
-assert(/Empieza la respuesta con Inés piensa \(=\)/.test(fm()), "la IA recibe la orden de pensar: " + fm());
+assert(/Empieza la respuesta con \{Inés \(=\): \.\.\.\}/.test(fm()), "la IA recibe la orden de pensar: " + fm());
+// el pensamiento entre llaves: se guarda y sale de la historia
+const llaves = turn("Espero.", "{Inés (-): José nunca friega las jarras a tiempo.}\nInés suspira.");
+assert(llaves === "Inés suspira." && /^t: José nunca friega las jarras a tiempo\.$/m.test(notes(1)), "pensamiento entre llaves:\n" + llaves + "\n" + notes(1));
 const th = turn("Espero.", "Inés piensa (+): «José debería disculparse primero.»\nInés calla.");
 assert(!/piensa/.test(th) && /^t: José debería disculparse primero\.$/m.test(notes(1)), "pensamiento guardado y quitado del texto:\n" + th + "\n" + notes(1));
 const inl = turn("Espero.", "Crepita el fuego. Inés piensa (=): \"Aquí nadie paga a tiempo.\" Limpia la barra.");

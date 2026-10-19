@@ -26,6 +26,9 @@ const LW = (() => {
   const BASERE = /^[ \t]*base:[^\n]*\n?/gim;
   // "Mira piensa (+): «...»" (también vale "thinks", por si la IA escribe en inglés)
   const THSTRIP = /^[ \t]*\p{Lu}[\p{L}\p{N}_'’\- ]{0,30} (?:piensa|thinks)(?: \(\s*(?:[+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\))?: «[^»\n]*»[ \t]*\n?/gmu;
+  // un pensamiento entre llaves, el formato que se le pide a la IA: "{Inés (+): ...}" (puede faltar la llave de cierre al final de la línea)
+  const BRACE_TH = /\{\s*[*_]*(\p{Lu}[\p{L}\p{N}_'’\-]*(?: [\p{L}\p{N}_'’\-]+){0,2})[*_]*(?:\s+(?:piensa|thinks))?\s*(?:\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\))?\s*:\s*(?:\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\))?\s*([^{}\n]*?)\s*(?:\}[ \t]*|$)/gmu;
+  const BRACE_TH1 = new RegExp(BRACE_TH.source, "mu");
   const THRE = /(^[ \t]*|(?<=[.!?…»"”)*_][ \t]+))[*_]*(\p{Lu}[\p{L}\p{N}_'’\-]*(?: [\p{L}\p{N}_'’\-]+){0,3}?)[*_]*\s+(?:piensa|thinks)\s*(?:\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\)\s*)?(?::\s*|(?=\s*[«"“]))[*_]*\s*(.+?)\s*[»"”]?[*_]*[ \t]*$/gmu;
 
   // ---- defaults (used when there is no Config card) ------------------------
@@ -679,12 +682,16 @@ const LW = (() => {
         .slice(0, 2).map((c) => c.first);
       if (quiet.length) add(5, "Pronto, dale a " + andList(quiet) + " un momento con el protagonista.");
     }
+    // primero estilo y punto de vista, al final lo que va al principio de la respuesta: la IA sigue lo último que lee,
+    // y las líneas de pensamiento no deben parecer prohibidas por "nada de guion" o "no narres lo que piensan"
+    const thx = !!(tp && tp.instr.length);
+    const style = typeof s.style === "string" ? s.style.trim() : "";     // "style: off" o vacío: nada
+    add(1, style && thx ? style + " Los pensamientos entre llaves de abajo son la única excepción." : style);
+    // los pensamientos los guarda el motor: la prosa solo cuenta lo que el protagonista ve y oye
+    if (s.thoughts && !W.off) add(0, "No narres nunca lo que piensan los demás personajes; cuenta solo lo que el protagonista ve y oye" + (thx ? ", salvo en los pensamientos entre llaves de abajo" : "") + ".");
     // las dos quieren el principio de la respuesta: primero la línea del log, justo después los pensamientos
     if (W.pendLog.length) add(1, "Pon {log: una frase en pasado y en tercera persona, nombrando " + (String(s.nombre_protagonista || "").trim() ? "a " + String(s.nombre_protagonista).trim() : "al protagonista") + ", que resuma lo que acaba de pasar} sola en la primera línea de la respuesta.");
-    add(1, tp ? thoughtInstr(X, tp, L).replace(/^Empieza la respuesta con/, W.pendLog.length ? "Tras esa línea, escribe" : "Empieza la respuesta con") : "");
-    // los pensamientos los guarda el motor: la prosa solo cuenta lo que el protagonista ve y oye
-    add(1, typeof s.style === "string" ? s.style.trim() : "");     // "style: off" o vacío: nada
-    if (s.thoughts && !W.off) add(0, "No narres nunca lo que piensan los demás personajes; cuenta solo lo que el protagonista ve y oye" + (tp ? ", aparte de las líneas de pensamiento pedidas arriba" : "") + ".");
+    add(1, thx ? thoughtInstr(X, tp, L).replace(/^Empieza la respuesta con/, W.pendLog.length ? "Tras esa línea, escribe" : "Empieza la respuesta con") : "");
     if (s.contact) {
       const names = L.allow.map((id) => X.byId[id] && X.byId[id].first).filter(Boolean);
       if (names.length) add(0, "El protagonista permite que " + names.join(" y ") + " le toque solo en esta acción.");
@@ -1378,10 +1385,11 @@ const LW = (() => {
     const names = tp.instr.map((ch) => ch.first);
     const tones = tp.instr.filter((ch) => ch.cfg.vals.tone).map((ch) => ch.first + " " + String(ch.cfg.vals.tone).replace(/_/g, " "));
     const mood = X.cfg.s.mood;
-    return "Empieza la respuesta con " + names.map((n) => n + (mood ? " piensa (=): «...»" : " piensa: «...»")).join(" ") +
-      ": una frase nueva en primera persona cada uno, en castellano, de menos de " + X.cfg.s.thoughts_words + " palabras, nombrando a las personas, no con pronombres" +
+    // entre llaves, como {log: ...}: una marca para el motor, nunca prosa, así no choca con el estilo
+    return "Empieza la respuesta con " + names.map((n) => "{" + n + (mood ? " (=)" : "") + ": ...}").join(" ") +
+      ": un pensamiento nuevo en primera persona cada uno, en castellano, de menos de " + X.cfg.s.thoughts_words + " palabras, nombrando a las personas, no con pronombres" +
       (mood ? "; entre paréntesis pon + si se siente más cerca del protagonista, - si más lejos, = si igual" : "") +
-      (tones.length ? "; tono: " + tones.join(", ") : "") + ". Después sigue con la historia.";
+      (tones.length ? "; tono: " + tones.join(", ") : "") + ". Las llaves no forman parte de la historia. Después sigue con la historia.";
   };
 
   // ---- mood: was this scene good or bad for the character? ----------------------
@@ -1998,6 +2006,8 @@ const LW = (() => {
     // cualquier otra llave, "{La protagonista se ríe}" o "{acaba de pasar: ...}" (una clave inventada, de hasta 3 palabras, se quita):
     // es el log si se había pedido uno, y sale de la historia igualmente (las llaves nunca son parte de la prosa)
     body = body.replace(/\{([^{}\n]{3,})(?:\}[ \t]*|$)/gm, (m, v) => {
+      const th = m.match(BRACE_TH1);
+      if (th && findChar(X, th[1])) return m;     // un pensamiento, "{Inés (+): ...}": se deja para los pensamientos de abajo
       const t = v.replace(/^\s*[^:\s][^:]{0,30}?:\s*(?=\S)/, (k) => (k.trim().split(/\s+/).length <= 3 ? "" : k)).trim();
       if (t && W.pendLog.length && !logged) logged = aiLog(t);
       return "";
@@ -2073,6 +2083,15 @@ const LW = (() => {
       if (!showTh) removed = true;
       return ind + [showTh ? words.slice(0, k).concat(shown).join(" ") : "", rest].filter(Boolean).join(" ");
     };
+    // los pensamientos pedidos, entre llaves: se guardan y salen de la historia (con thoughts_show on se ven como "Nombre piensa: «...»")
+    body = body.replace(BRACE_TH, (m, nm, s1, s2, tx) => {
+      const ch = findChar(X, nm);
+      if (!ch) return m;
+      removed = true;
+      const shown = L.rel[ch.id] ? grab(ch, tx, s1 || s2) : null;
+      return showTh && shown ? shown + "\n" : "";
+    });
+    // formas antiguas en las que la IA aún puede escribir un pensamiento, dentro de la prosa:
     // "Octavia (-): ..." u "Octavia: (-) ..." se saltan "piensa": un nombre conocido, dos puntos y una señal también es un pensamiento
     // ("Octavia: «...»" no: en castellano « » también es diálogo, y la IA a veces lo escribe en formato de guion)
     body = body.replace(/(^[ \t]*|(?<=[.!?…»"”)*_][ \t]+))[*_]*(\p{Lu}[\p{L}\p{N}_'’\-]*(?: [\p{L}\p{N}_'’\-]+){0,2})[*_]*\s*(?:\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\)\s*:|:\s*\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\))[ \t]*/gmu,
@@ -2115,7 +2134,7 @@ const LW = (() => {
     }
     W.auto = [];
     W.force = W.force.filter((id) => !found.some((f) => f.ch.id === id));   // /pensar se mantiene hasta que llega el pensamiento (la IA puede saltárselo)
-    if (removed) body = body.replace(/^\s+/, "").replace(/[ \t]+$/gm, "").replace(/\n{3,}/g, "\n\n");
+    if (removed) body = body.replace(/^\s+|\s+$/g, "").replace(/[ \t]+$/gm, "").replace(/\n{3,}/g, "\n\n");
 
     const ids = presentIds(X, body, 12);
     for (const f of found) if (!ids.includes(f.ch.id)) ids.push(f.ch.id);     // whoever thought was in the scene

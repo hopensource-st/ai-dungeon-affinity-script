@@ -19,6 +19,9 @@ const LW = (() => {
   const WBLOCK = /<<LWW\n[\s\S]*?\nLWW>>/;
   const BASERE = /^[ \t]*base:[^\n]*\n?/gim;
   const THSTRIP = /^[ \t]*[A-Z][\w'’\- ]{0,30} thinks(?: \(\s*(?:[+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\))?: «[^»\n]*»[ \t]*\n?/gm;
+  // a thought in braces, the format the AI is asked for: "{Elowen (+): ...}" (the closing brace may be missing at the end of a line)
+  const BRACE_TH = /\{\s*[*_]*([A-Z][\w'’\-]*(?: [\w'’\-]+){0,2})[*_]*(?:\s+thinks)?\s*(?:\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\))?\s*:\s*(?:\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\))?\s*([^{}\n]*?)\s*(?:\}[ \t]*|$)/gm;
+  const BRACE_TH1 = new RegExp(BRACE_TH.source, "m");
   const THRE = /(^[ \t]*|(?<=[.!?…»"”)*_][ \t]+))[*_]*([A-Z][\w'’\-]*(?: [\w'’\-]+){0,3}?)[*_]*\s+thinks\s*(?:\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\)\s*)?(?::\s*|(?=\s*[«"“]))[*_]*\s*(.+?)\s*[»"”]?[*_]*[ \t]*$/gm;
 
   // ---- defaults (used when there is no Config card) ------------------------
@@ -661,12 +664,16 @@ const LW = (() => {
         .slice(0, 2).map((c) => c.first);
       if (quiet.length) add(5, "Soon give " + andList(quiet) + " a moment with the protagonist.");
     }
+    // style and point of view first, the requests for the top of the reply last: the AI follows what it reads last,
+    // and the thought lines must not read as forbidden by "no script lines" or "never narrate what they think"
+    const thx = !!(tp && tp.instr.length);
+    const style = typeof s.style === "string" ? s.style.trim() : "";     // "style: off" or empty: nothing
+    add(1, style && thx ? style + " The thoughts in braces below are the only exception." : style);
+    // the engine keeps the thoughts: the prose shows only what the protagonist can see and hear
+    if (s.thoughts && !W.off) add(0, "Never narrate what other characters think; show only what the protagonist sees and hears" + (thx ? ", except in the thoughts in braces below" : "") + ".");
     // both want the top of the reply: the log line first, the thoughts right after it
     if (W.pendLog.length) add(1, "Put {log: one past-tense sentence in the third person, naming " + (String(s.protagonist || "").trim() || "the protagonist") + ", summing up what just happened} alone on the first line of the reply.");
-    add(1, tp ? thoughtInstr(X, tp, L).replace(/^Begin the reply with/, W.pendLog.length ? "After that line, write" : "Begin the reply with") : "");
-    // the engine keeps the thoughts: the prose shows only what the protagonist can see and hear
-    add(1, typeof s.style === "string" ? s.style.trim() : "");     // "style: off" or empty: nothing
-    if (s.thoughts && !W.off) add(0, "Never narrate what other characters think; show only what the protagonist sees and hears" + (tp ? ", apart from the thought lines asked above" : "") + ".");
+    add(1, thx ? thoughtInstr(X, tp, L).replace(/^Begin the reply with/, W.pendLog.length ? "After that line, write" : "Begin the reply with") : "");
     if (s.contact) {
       const names = L.allow.map((id) => X.byId[id] && X.byId[id].first).filter(Boolean);
       if (names.length) add(0, "The protagonist permits " + names.join(" and ") + " to touch them in this action only.");
@@ -1348,10 +1355,11 @@ const LW = (() => {
     const names = tp.instr.map((ch) => ch.first);
     const tones = tp.instr.filter((ch) => ch.cfg.vals.tone).map((ch) => ch.first + " " + String(ch.cfg.vals.tone).replace(/_/g, " "));
     const mood = X.cfg.s.mood;
-    return "Begin the reply with " + names.map((n) => n + (mood ? " thinks (=): «...»" : " thinks: «...»")).join(" ") +
-      ": one new first-person sentence each, under " + X.cfg.s.thoughts_words + " words, naming people, not pronouns" +
-      (mood ? "; in the brackets put + if warmer toward the protagonist, - if cooler, = if unchanged" : "") +
-      (tones.length ? "; tone: " + tones.join(", ") : "") + ". Then continue the story.";
+    // in braces, like {log: ...}: a marker for the engine, never prose, so it does not clash with the style
+    return "Begin the reply with " + names.map((n) => "{" + n + (mood ? " (=)" : "") + ": ...}").join(" ") +
+      ": one new first-person thought each, under " + X.cfg.s.thoughts_words + " words, naming people, not pronouns" +
+      (mood ? "; in the parentheses put + if warmer toward the protagonist, - if cooler, = if unchanged" : "") +
+      (tones.length ? "; tone: " + tones.join(", ") : "") + ". The braces are not part of the story. Then continue the story.";
   };
 
   // ---- mood: was this scene good or bad for the character? ----------------------
@@ -1969,6 +1977,8 @@ const LW = (() => {
     // any other braces, "{The protagonist laughs}" or "{just happened: ...}" (a key of the AI's own, up to 3 words, is dropped):
     // the log when one was asked for, and out of the story either way (braces never belong in the prose)
     body = body.replace(/\{([^{}\n]{3,})(?:\}[ \t]*|$)/gm, (m, v) => {
+      const th = m.match(BRACE_TH1);
+      if (th && findChar(X, th[1])) return m;     // a thought, "{Elowen (+): ...}": left for the thoughts below
       const t = v.replace(/^\s*[^:\s][^:]{0,30}?:\s*(?=\S)/, (k) => (k.trim().split(/\s+/).length <= 3 ? "" : k)).trim();
       if (t && W.pendLog.length && !logged) logged = aiLog(t);
       return "";
@@ -2044,6 +2054,15 @@ const LW = (() => {
       if (!showTh) removed = true;
       return ind + [showTh ? words.slice(0, k).concat(shown).join(" ") : "", rest].filter(Boolean).join(" ");
     };
+    // the thoughts asked for, in braces: stored and out of the story (shown as "Name thinks: «...»" with thoughts_show on)
+    body = body.replace(BRACE_TH, (m, nm, s1, s2, tx) => {
+      const ch = findChar(X, nm);
+      if (!ch) return m;
+      removed = true;
+      const shown = L.rel[ch.id] ? grab(ch, tx, s1 || s2) : null;
+      return showTh && shown ? shown + "\n" : "";
+    });
+    // older ways the AI may still write a thought, in the prose:
     // "Octavia (-): ...", "Octavia: (-) ..." or "Octavia: «...»" leave out "thinks": a known name, a colon and a sign or « is a thought too
     // ("Octavia: "..."" is not: the AI writes dialogue that way too)
     body = body.replace(/(^[ \t]*|(?<=[.!?…»"”)*_][ \t]+))[*_]*([A-Z][\w'’\-]*(?: [\w'’\-]+){0,2})[*_]*\s*(?:\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\)\s*:|:\s*\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\)|:(?=\s*[*_]*«))[ \t]*/gm,
@@ -2086,7 +2105,7 @@ const LW = (() => {
     }
     W.auto = [];
     W.force = W.force.filter((id) => !found.some((f) => f.ch.id === id));   // /think holds until the thought arrives (the AI may skip it)
-    if (removed) body = body.replace(/^\s+/, "").replace(/[ \t]+$/gm, "").replace(/\n{3,}/g, "\n\n");
+    if (removed) body = body.replace(/^\s+|\s+$/g, "").replace(/[ \t]+$/gm, "").replace(/\n{3,}/g, "\n\n");
 
     const ids = presentIds(X, body, 12);
     for (const f of found) if (!ids.includes(f.ch.id)) ids.push(f.ch.id);     // whoever thought was in the scene

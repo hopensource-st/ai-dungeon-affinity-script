@@ -373,8 +373,14 @@ assert(/^t: That book was overdue\.$/m.test(storyCards.find((c) => c.id === 201)
 // /think holds until the thought arrives: a reply that skips it does not cancel it
 run("input", "/think Mira");
 turn("I wait for Mira.", "Mira polishes a glass.");
-assert(G.state.lw.w.force.includes("1") && /Mira thinks \(=\)/.test(G.state.memory.frontMemory), "still asked after a reply with no thought: " + JSON.stringify(G.state.lw.w.force) + " " + G.state.memory.frontMemory);
-turn("I wait.", "Mira thinks (=): «The glasses never stay clean.»\nMira sighs.");
+assert(/never script lines[^\]]*The thoughts in braces below are the only exception\.[^\]]*except in the thoughts in braces below\.[^\]]*Begin the reply with \{Mira \(=\): \.\.\.\}[^\]]*Then continue the story\.\]$/.test(G.state.memory.frontMemory), "the thought request comes last, in braces, as the exception: " + G.state.memory.frontMemory);
+assert(G.state.lw.w.force.includes("1"), "still asked after a reply with no thought: " + JSON.stringify(G.state.lw.w.force));
+// the thought in braces: stored, out of the story, never taken as a log, even with no closing brace
+G.state.lw.w.pendLog = [""]; G.state.lw.w.asked = true;
+const nLogs = G.state.lw.w.log.length;
+const braced = turn("I wait.", "{Mira (=): The glasses never stay clean, and Hero never notices.}\nMira sighs.\n{Tobin: Hero should not trust the steward");
+assert(braced === "Mira sighs." && /^t: The glasses never stay clean, and Hero never notices\.$/m.test(storyCards[0].description) && /^t: Hero should not trust the steward$/m.test(storyCards[1].description), "braced: " + braced);
+assert(G.state.lw.w.log.length === nLogs, "a braced thought is not a log: " + G.state.lw.w.log.slice(nLogs));
 assert(!G.state.lw.w.force.includes("1"), "done once the thought arrives");
 
 // bare braces with no "log:" key: logged when a log was asked for, and removed from the story
