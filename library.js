@@ -1795,6 +1795,7 @@ const LW = (() => {
       const tp = planThoughts(X, L, ids, info.actionCount);
       W.auto = tp.auto;
       block = buildInject(X, L, ids, tp);
+      W.asked = W.pendLog.length > 0;                          // the AI is asked for a {log} this turn
     }
     L.lastBlock = block;
     L.lastAction = createNow ? "" : rest.replace(MARK, "");
@@ -1920,7 +1921,9 @@ const LW = (() => {
     body = body.replace(/\{([^{}\n:]{3,})\}[ \t]*/g, (m, v) => { if (W.pendLog.length && !logged) { addLog(X, W, v); logged = true; } return ""; });
     if (/^\s*\{/.test(text)) body = text.match(/^\s*/)[0] + body.replace(/^\s+/, "");   // a marker on the first line
     // a twist or beat that ended last turn: the AI was asked for a {log:...}; without one, the generic text goes in
-    if (W.pendLog.length) { if (!logged) W.pendLog.forEach((l) => addLog(X, W, l)); W.pendLog = []; }
+    // ponytail: a Continue skips the Input hook, so nothing was asked: the request waits for the next action
+    if (W.pendLog.length && (logged || W.asked)) { if (!logged) W.pendLog.forEach((l) => addLog(X, W, l)); W.pendLog = []; }
+    W.asked = false;
 
     // thoughts: the AI writes "Name thinks: «...»"; the engine stores it in the card's Notes and, unless
     // thoughts_show is on, removes it from the story text (like Inner Self does)

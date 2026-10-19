@@ -1826,6 +1826,7 @@ const LW = (() => {
       const tp = planThoughts(X, L, ids, info.actionCount);
       W.auto = tp.auto;
       block = buildInject(X, L, ids, tp);
+      W.asked = W.pendLog.length > 0;                          // the AI is asked for a {log} this turn
     }
     L.lastBlock = block;
     L.lastAction = createNow ? "" : rest.replace(MARK, "");
@@ -1952,7 +1953,9 @@ const LW = (() => {
     body = body.replace(/\{([^{}\n:]{3,})\}[ \t]*/g, (m, v) => { if (W.pendLog.length && !logged) { addLog(X, W, v); logged = true; } return ""; });
     if (/^\s*\{/.test(text)) body = text.match(/^\s*/)[0] + body.replace(/^\s+/, "");   // una marca en la primera línea
     // a twist or beat that ended last turn: the AI was asked for a {log:...}; without one, the generic text goes in
-    if (W.pendLog.length) { if (!logged) W.pendLog.forEach((l) => addLog(X, W, l)); W.pendLog = []; }
+    // ponytail: a Continue skips the Input hook, so nothing was asked: the request waits for the next action
+    if (W.pendLog.length && (logged || W.asked)) { if (!logged) W.pendLog.forEach((l) => addLog(X, W, l)); W.pendLog = []; }
+    W.asked = false;
 
     // pensamientos: la IA escribe "Nombre piensa: «...»"; el motor lo guarda en las Notes de la tarjeta y, salvo que
     // thoughts_show esté en on, lo quita del texto de la historia (como hace Inner Self)

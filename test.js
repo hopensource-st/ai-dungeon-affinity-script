@@ -187,7 +187,7 @@ assert(G.state.lw.w.log.length <= 6, "state keeps the latest: " + G.state.lw.w.l
 assert(cardLog().length === before + 10, "card keeps them all");
 G.info.actionCount++;
 run("input", "I wait.");
-G.state.lw.w.pendLog = ["Retry check line."];
+G.state.lw.w.pendLog = ["Retry check line."]; G.state.lw.w.asked = true;
 run("output", "Nothing happens.");
 const afterFirst = cardLog().length;
 assert(afterFirst === before + 11, "first reply added its entry");
@@ -274,6 +274,13 @@ assert(!/\{log/.test(unclosed) && G.state.lw.w.log.some((l) => /Mira agreed to k
 const first = turn("I wait.", "{log: Mira locked the cellar for the night.}\nMira yawns.");
 assert.strictEqual(first, "Mira yawns.");
 
+// Continue (a reply with no action before it) never asked for the log, so it stays pending for the next action
+G.state.lw.w.pendLog = ["Story beat: A Continue Check."]; G.state.lw.w.asked = false;
+G.info.actionCount++; run("output", "Mira keeps talking.");
+assert(G.state.lw.w.pendLog.length === 1 && !G.state.lw.w.log.some((l) => /A Continue Check/.test(l)), "kept after a Continue");
+turn("I listen.", "{log: Mira told the whole story of the cellar.}\nMira finishes.");
+assert(!G.state.lw.w.pendLog.some((l) => /A Continue Check/.test(l)) && G.state.lw.w.log.some((l) => /whole story of the cellar/.test(l)), "asked on the next action, and answered: " + JSON.stringify(G.state.lw.w.pendLog));
+
 // bare braces with no "log:" key: logged when a log was asked for, and removed from the story
 G.state.lw.w.pendLog = [""];
 const bare = turn("I wait.", "{The protagonist comments on the irony of the curse}\nMira laughs.");
@@ -299,7 +306,7 @@ G.info.actionCount++;
 run("input", "I look at Selene.");
 const line = G.state.lw.pending;
 G.state.memory.frontMemory = "[Another script's note]";
-const story = G.history.slice(-40).map((h) => h.text).join("\n");
+const story = G.history.slice(-100).map((h) => h.text).join("\n");
 const ctxIn = "AI INSTRUCTIONS\n" + story + "\nI look at Selene.";
 G.info.maxChars = ctxIn.length + 20;
 const ctxOut = run("context", ctxIn).text;
