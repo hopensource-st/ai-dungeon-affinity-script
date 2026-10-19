@@ -6,7 +6,7 @@
 // (humor, contacto, saltos de tiempo) y los comandos están en castellano; los comandos ingleses siguen valiendo.
 // ============================================================================
 const LW = (() => {
-  const VERSION = "1.1.2-es";                                 // lo muestra /comprobar; súbelo en cada actualización publicada
+  const VERSION = "1.1.3-es";                                 // lo muestra /comprobar; súbelo en cada actualización publicada
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const num = (v, d) => { const n = parseFloat(v); return isNaN(n) ? d : n; };
   const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -70,6 +70,8 @@ const LW = (() => {
       mood_pos: "agradec|gracias|sonr[ieí]|carcaj|ayud|abraz|bes[aeoó]|regal|elogi|halag|consol|proteg|perdon|disculp|acept|bienvenid|tranquiliz|amabl|cariñ|ternura|reconfort|ruboriz|sonroj|anim[aoó]",
       mood_neg: "insult|burl|mof|despreci|mient|mint|ment[ií]|amenaz|abofete|bofet|golpe|puñetaz|empuj|traicion|grit|reprend|regañ|ignor|rechaz|fulmin|ceñu|cruel|groser|enfad|furios|asco|humill|maldij|maldec|odi[aoó]",
       auto_allow: true,
+      // un roce amistoso (sin palabras de mood_neg en su frase) sube estos stats en touch_bonus
+      touch_stats: "afinidad|atracción|confianza|obsesión", touch_bonus: 0.3,
       thoughts: true, thoughts_show: false, thoughts_interval: 4, thoughts_max: 2, thoughts_keep: 20, thoughts_words: 20, thoughts_context: 2, thoughts_recent: 3,
       chronicle_lines: 3, chronicle_every: 8, chronicle_max: 200, chronicle_stats: "afinidad|atracción|obsesión", chronicle_min: 4,
       clock: true, clock_times: "amanecer|mañana|tarde|anochecer|noche", clock_day: 1, clock_time: "mañana", clock_turns: 0, clock_on_beat: false,
@@ -1772,14 +1774,16 @@ const LW = (() => {
     }
     // lo que se le dirá a la IA sobre los personajes en juego
     const histText = (history || []).slice(-6).map((h) => h.text).join(" ").slice(-1500);
-    // el contacto lo decide quien juega: un roce que escribe en su propia acción cuenta como permiso, sin /permitir
-    if (X.cfg.s.contact && X.cfg.s.auto_allow && !createNow && !(pc && pc.cmd === "deny")) {
+    // un roce que quien juega escribe en su propia acción cuenta como contacto y (módulo de contacto) como permiso, sin /permitir
+    L.touchNow = [];
+    if (!createNow && !(pc && pc.cmd === "deny")) {
       for (const sent of rest.replace(MARK, "").split(/(?<=[.!?])\s+/)) {
         if (!CONSENT.test(sent)) continue;
         let who = presentIds(X, sent, 2);
         if (!who.length) who = presentIds(X, histText.replace(MARK, ""), 1);      // "le cojo la mano": el último nombrado
-        for (const id of who) if (!L.allow.includes(id)) L.allow.push(id);
+        for (const id of who) L.touchNow.push([id, !rough(X, sent)]);
       }
+      if (X.cfg.s.contact && X.cfg.s.auto_allow) for (const [id] of L.touchNow) if (!L.allow.includes(id)) L.allow.push(id);
     }
     const recent = histText + " " + rest;
     const ids = presentIds(X, recent.replace(MARK, ""), X.cfg.s.max_present);
@@ -1854,8 +1858,18 @@ const LW = (() => {
 
   // contacto que quien juega escribe en su propia acción (permiso solo para esa acción)
   // ponytail: raíces de verbos y partes del cuerpo; una forma rara de decirlo se escapa (usa /permitir)
-  const CONSENT = /(?<!\p{L})(?:abraz|bes[aeoó]|acurruc|acarici|achuch|arrop)\p{L}*|(?<!\p{L})(?:toc|cog|tom|agarr|sujet|apriet|estrech|tiend|extiend|ofrez|ofrec|pong|pon|pas[oa]|apoy|roz|acerc|entrelaz|acun|retir)\p{L}*[^.!?]*(?<!\p{L})(?:mano|manos|brazo|brazos|cara|rostro|mejilla|hombro|hombros|cintura|pelo|cabello|muñeca|dedos|palma|regazo|pecho|cuello|frente)(?!\p{L})|(?<!\p{L})(?:me\s+lanzo|corro|me\s+refugio|caigo|me\s+dejo\s+caer)[^.!?]*(?<!\p{L})brazos(?!\p{L})/iu;
-  const TOUCH = /(?<!\p{L})(?:agarr|abraz|acarici|bes|tom|cog|sujet|toc|apriet|roz)\p{L}*[^.!?]*(?<!\p{L})(?:mano|manos|cara|rostro|mejilla|brazo|cintura|hombro|pelo|cabello|muñeca|dedos)(?!\p{L})|(?<!\p{L})(?:agarr|abraz|acarici|bes[aeoó])\p{L}*/iu;
+  const CONSENT = /(?<!\p{L})(?:abraz|bes[aeoó]|acurruc|acarici|achuch|arrop)\p{L}*|(?<!\p{L})(?:toc|toq|cog|coj|tom|agarr|sujet|apriet|apret|estrech|tiend|extiend|ofrez|ofrec|pong|pon|pas[oa]|apoy|roz|acerc|entrelaz|acun|retir)\p{L}*[^.!?]*(?<!\p{L})(?:mano|manos|brazo|brazos|cara|rostro|mejilla|hombro|hombros|cintura|pelo|cabello|muñeca|dedos|palma|regazo|pecho|cuello|frente)(?!\p{L})|(?<!\p{L})(?:me\s+lanzo|corro|me\s+refugio|caigo|me\s+dejo\s+caer)[^.!?]*(?<!\p{L})brazos(?!\p{L})/iu;
+  const rough = (X, sent) => !!X.cfg.s.mood_neg && new RegExp(WB0 + "(?:" + X.cfg.s.mood_neg + ")", "iu").test(sent);
+  // un roce amistoso sube los touch_stats que tenga el personaje (el "needs" de cada stat se sigue respetando); sin tildes también vale
+  const touchBump = (X, ch, r) => {
+    const names = String(X.cfg.s.touch_stats || "").split("|").map((x) => fold(x.trim()));
+    for (const d of activeStats(X, ch)) {
+      if (!names.includes(fold(d.name)) || r.s[d.name] == null) continue;
+      if (d.needs && !cmp(r.s[d.needs.stat] != null ? r.s[d.needs.stat] : 0, d.needs.op, d.needs.val)) continue;
+      r.s[d.name] = clamp(r.s[d.name] + num(X.cfg.s.touch_bonus, 0), d.min, d.max);
+    }
+  };
+  const TOUCH = /(?<!\p{L})(?:agarr|abraz|acarici|bes|tom|cog|coj|sujet|toc|toq|apriet|apret|roz)\p{L}*[^.!?]*(?<!\p{L})(?:mano|manos|cara|rostro|mejilla|brazo|cintura|hombro|pelo|cabello|muñeca|dedos)(?!\p{L})|(?<!\p{L})(?:agarr|abraz|acarici|bes[aeoó])\p{L}*/iu;
 
   const onOutput = (text) => {
     ensureCards();
@@ -2025,17 +2039,29 @@ const LW = (() => {
 
     body = cleanText(X, body);
 
-    const warned = [];
-    if (X.cfg.s.contact) {
-      for (const sent of body.split(/(?<=[.!?])\s+/)) {
-        if (!TOUCH.test(sent)) continue;
-        for (const id of presentIds(X, sent, 2)) {
-          if (L.allow.includes(id)) L.rel[id].touched.push(turn);
-          else if (!warned.includes(X.byId[id].first)) warned.push(X.byId[id].first);
-        }
+    // el contacto se cuenta con el módulo encendido o apagado; el módulo solo añade permisos y avisos
+    // un roce es amistoso salvo que alguna de sus frases sea brusca
+    const warned = [], touched = [], kind = {};
+    const hit = (id, k) => { if (!touched.includes(id)) touched.push(id); kind[id] = kind[id] !== false && k; };
+    for (const [id, k] of L.touchNow || []) if (L.rel[id]) hit(id, k);
+    const mine = touched.slice();
+    for (const sent of body.split(/(?<=[.!?])\s+/)) {
+      if (!TOUCH.test(sent)) continue;
+      let who = presentIds(X, sent, 2);
+      // ponytail: "Te coge la mano" no nombra a nadie: cuenta para quien tocó quien juega, o para el único personaje de la respuesta
+      if (!who.length) who = mine.length ? mine : ids.length === 1 ? ids : [];
+      for (const id of who) {
+        if (!X.cfg.s.contact || L.allow.includes(id)) hit(id, !rough(X, sent));
+        else if (!warned.includes(X.byId[id].first)) warned.push(X.byId[id].first);
       }
     }
-    for (const id of ids) persist(X, L, X.byId[id]);
+    for (const id of touched) {
+      const r = L.rel[id];
+      if (!r || r.touched.slice(-1)[0] === turn) continue;
+      r.touched.push(turn);
+      if (kind[id]) touchBump(X, X.byId[id], r);
+    }
+    for (const id of new Set([...ids, ...touched])) if (X.byId[id]) persist(X, L, X.byId[id]);
     persistTension(X, L);
     wPersist(X, L);
     L.allow = [];

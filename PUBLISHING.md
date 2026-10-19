@@ -14,7 +14,7 @@ Desde el parche 2.39.0 (agosto de 2026), AI Dungeon tiene **Scripts como conteni
 4. **Marca el escenario como Script.**
 5. **Portada:** una imagen que represente vínculos, recuerdos o hilos entre personajes.
 6. **Publica.** Los escenarios pasan por la moderación automática antes de publicarse.
-7. **Pruébalo como jugador:** en una partida cualquiera (por ejemplo, un escenario ajeno con tarjetas de personaje), añade el Script, juega una acción y escribe `/check`. Debe decir `LW Affinity Engine` y la versión (ahora `1.1.2`) y el número de personajes que ha encontrado.
+7. **Pruébalo como jugador:** en una partida cualquiera (por ejemplo, un escenario ajeno con tarjetas de personaje), añade el Script, juega una acción y escribe `/check`. Debe decir `LW Affinity Engine` y la versión (ahora `1.1.3`) y el número de personajes que ha encontrado.
 
 ### Al actualizar
 1. Sube el número en `const VERSION = "1.0.0"` (línea 8 de `library.js`): `1.0.1` para arreglos, `1.1.0` para funciones nuevas.
@@ -60,6 +60,9 @@ TIPS
 • Keep your own character out: add "skip: YourName" to the LW Config card.
 • Choose your own yandere: put [cfg obsession:0.3] in that character's card Notes. No surprise yanderes: add "yandere_chance: 0" to LW Config.
 • Another script also writes Front Memory? The engine notices and sends its line another way. If characters still never think, add "inject: text" to LW Config.
+
+WHAT'S NEW IN 1.1.3
+• A friendly touch raises affinity, attraction, trust and obsession a little (a rough one does not). Touches are counted in every story: yours, and "she takes your hand" with no name.
 
 WHAT'S NEW IN 1.1.2
 • Thoughts the AI writes in the middle of a paragraph, with plain "quotes", are now stored too.

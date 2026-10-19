@@ -5,7 +5,7 @@
 // Stats, relations, thoughts, chronicle, events, arc, clock, scenes, cleaner, card creation, commands.
 // ============================================================================
 const LW = (() => {
-  const VERSION = "1.1.2";                                    // shown by /check; bump it on every published update
+  const VERSION = "1.1.3";                                    // shown by /check; bump it on every published update
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const num = (v, d) => { const n = parseFloat(v); return isNaN(n) ? d : n; };
   const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -61,6 +61,8 @@ const LW = (() => {
       mood_pos: "thank|smil|laugh|grin|help|hug|embrac|kiss|gift|prais|compliment|comfort|protect|forgiv|apologi|agree|welcom|reassur|kind|gentl|chuckl|blush",
       mood_neg: "insult|mock|sneer|lied|lying|liar|threat|slap|punch|shov|betray|yell|shout|scold|ignor|refus|glar|scowl|cruel|rude|angr|furious|disgust|humiliat|curs",
       auto_allow: true,
+      // a friendly touch (no mood_neg word in its sentence) raises these stats by touch_bonus
+      touch_stats: "affinity|attraction|trust|obsession", touch_bonus: 0.3,
       thoughts: true, thoughts_show: false, thoughts_interval: 4, thoughts_max: 2, thoughts_keep: 20, thoughts_words: 20, thoughts_context: 2, thoughts_recent: 3,
       chronicle_lines: 3, chronicle_every: 8, chronicle_max: 200, chronicle_stats: "affinity|attraction|obsession", chronicle_min: 4,
       clock: true, clock_times: "dawn|morning|afternoon|evening|night", clock_day: 1, clock_time: "morning", clock_turns: 0, clock_on_beat: false,
@@ -1741,14 +1743,16 @@ const LW = (() => {
     }
     // what the AI will be told about the characters in play
     const histText = (history || []).slice(-6).map((h) => h.text).join(" ").slice(-1500);
-    // the player decides contact: a touch she writes herself in this action counts as permission, no /allow needed
-    if (X.cfg.s.contact && X.cfg.s.auto_allow && !createNow && !(pc && pc.cmd === "deny")) {
+    // a touch the player writes herself counts as a touch, and (contact module) as permission for this action, no /allow needed
+    L.touchNow = [];
+    if (!createNow && !(pc && pc.cmd === "deny")) {
       for (const sent of rest.replace(MARK, "").split(/(?<=[.!?])\s+/)) {
         if (!CONSENT.test(sent)) continue;
         let who = presentIds(X, sent, 2);
         if (!who.length) who = presentIds(X, histText.replace(MARK, ""), 1);      // "I take his hand": the last one mentioned
-        for (const id of who) if (!L.allow.includes(id)) L.allow.push(id);
+        for (const id of who) L.touchNow.push([id, !rough(X, sent)]);
       }
+      if (X.cfg.s.contact && X.cfg.s.auto_allow) for (const [id] of L.touchNow) if (!L.allow.includes(id)) L.allow.push(id);
     }
     const recent = histText + " " + rest;
     const ids = presentIds(X, recent.replace(MARK, ""), X.cfg.s.max_present);
@@ -1823,6 +1827,16 @@ const LW = (() => {
 
   // contact the player writes into her own action (permission for that action only)
   const CONSENT = /\b(?:hug\w*|embrac\w+|kiss\w*|cuddl\w+|nuzzl\w+|snuggl\w+|caress\w*)\b|\b(?:touch\w*|stroke[sd]?|stroking|hold(?:s|ing)?|held|grab\w*|grasp\w*|squeez\w+|clasp\w*|cradl\w+|pull(?:s|ed)?|press\w*|brush\w*|pat(?:s|ted)?|lean\w*|rest\w*|tak(?:e|es|en)|took|offer\w*|extend\w*|giv(?:e|es|en)|gave|reach\w*|lay|lays|laid|put|puts|place\w*|link\w*|shak(?:e|es|ing)|shook)\b[^.!?]*\b(?:hand|hands|arm|arms|face|cheek|shoulder|shoulders|waist|hair|wrist|fingers|palm|lap|chest|neck|forehead)\b|\b(?:run|runs|ran|running|fall|falls|fell|step|steps|stepped|stepping)\b[^.!?]*\binto\s+(?:his|her|their|my|\w+(?:\s\w+)?['’]s)\s+arms\b/i;
+  const rough = (X, sent) => !!X.cfg.s.mood_neg && new RegExp("\\b(?:" + X.cfg.s.mood_neg + ")", "i").test(sent);
+  // a friendly touch raises the touch_stats this character has (a stat's "needs" still applies)
+  const touchBump = (X, ch, r) => {
+    const names = String(X.cfg.s.touch_stats || "").split("|").map((x) => x.trim().toLowerCase());
+    for (const d of activeStats(X, ch)) {
+      if (!names.includes(d.name) || r.s[d.name] == null) continue;
+      if (d.needs && !cmp(r.s[d.needs.stat] != null ? r.s[d.needs.stat] : 0, d.needs.op, d.needs.val)) continue;
+      r.s[d.name] = clamp(r.s[d.name] + num(X.cfg.s.touch_bonus, 0), d.min, d.max);
+    }
+  };
   const TOUCH = /\b(grab|grabs|grabbed|hug|hugs|hugged|seize|seizes|seized|caress|caresses|caressed|stroke|strokes|stroked|kiss|kisses|kissed|embrace|embraces|embraced|reach(?:es|ed)? for|takes?|took|holds?|held|touch(?:es|ed)?|grasp(?:s|ed)?)\b[^.!?]*\b(hand|hands|face|cheek|arm|waist|shoulder|hair|wrist|fingers)\b|\b(grab|grabs|grabbed|seize|seizes|seized|caress|caresses|caressed|kiss|kisses|kissed|embrace|embraces|embraced)\b/i;
 
   const onOutput = (text) => {
@@ -1993,17 +2007,29 @@ const LW = (() => {
 
     body = cleanText(X, body);
 
-    const warned = [];
-    if (X.cfg.s.contact) {
-      for (const sent of body.split(/(?<=[.!?])\s+/)) {
-        if (!TOUCH.test(sent)) continue;
-        for (const id of presentIds(X, sent, 2)) {
-          if (L.allow.includes(id)) L.rel[id].touched.push(turn);
-          else if (!warned.includes(X.byId[id].first)) warned.push(X.byId[id].first);
-        }
+    // touches are counted with the contact module on or off; the module only adds permission and warnings
+    // a touch is friendly unless one of its sentences is rough
+    const warned = [], touched = [], kind = {};
+    const hit = (id, k) => { if (!touched.includes(id)) touched.push(id); kind[id] = kind[id] !== false && k; };
+    for (const [id, k] of L.touchNow || []) if (L.rel[id]) hit(id, k);
+    const mine = touched.slice();
+    for (const sent of body.split(/(?<=[.!?])\s+/)) {
+      if (!TOUCH.test(sent)) continue;
+      let who = presentIds(X, sent, 2);
+      // ponytail: "He takes your hand" names no one: the one the player touched, or the only character in the reply
+      if (!who.length) who = mine.length ? mine : ids.length === 1 ? ids : [];
+      for (const id of who) {
+        if (!X.cfg.s.contact || L.allow.includes(id)) hit(id, !rough(X, sent));
+        else if (!warned.includes(X.byId[id].first)) warned.push(X.byId[id].first);
       }
     }
-    for (const id of ids) persist(X, L, X.byId[id]);
+    for (const id of touched) {
+      const r = L.rel[id];
+      if (!r || r.touched.slice(-1)[0] === turn) continue;
+      r.touched.push(turn);
+      if (kind[id]) touchBump(X, X.byId[id], r);
+    }
+    for (const id of new Set([...ids, ...touched])) if (X.byId[id]) persist(X, L, X.byId[id]);
     persistTension(X, L);
     wPersist(X, L);
     L.allow = [];

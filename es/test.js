@@ -78,6 +78,19 @@ turn("/pnj Kel, una camarera cotilla", "Kel Varn, camarera de la posada que cono
 const kel = storyCards.find((c) => c.title === "Kel Varn");
 assert(kel && /Aspecto: pelirroja y pecosa\.$/.test(kel.entry), "tarjeta de /pnj: " + JSON.stringify(kel));
 
+// los contactos se cuentan con el módulo apagado: el roce de quien juega, y una respuesta que no nombra a nadie
+const roces = () => G.state.lw.rel["1"].touched.length;
+const r0 = roces(), conf = () => G.state.lw.rel["1"].s.confianza;
+let c0 = conf();
+turn("Le cojo la mano a Inés.", "Aparta la mirada.");
+assert(roces() === r0 + 1 && /^contactos: \d+$/m.test(notes(1)), "cuenta el roce de quien juega:\n" + notes(1));
+assert(Math.abs(conf() - c0 - 0.3) < 0.05, "un roce amistoso sube la confianza: " + c0 + " -> " + conf());
+turn("Espero a Inés.", "Inés se acerca. Te coge la mano.");
+assert(roces() === r0 + 2, "\"Te coge la mano\" cuenta para la única que sale en la respuesta");
+c0 = conf();
+turn("Le agarro la muñeca a Inés y me burlo de ella.", "Inés se aparta.");
+assert(roces() === r0 + 3 && conf() <= c0, "un roce brusco cuenta pero no sube nada: " + c0 + " -> " + conf());
+
 // otro script pisa la frontMemory y el contexto va lleno: la línea va dentro del texto, recortando lo más antiguo de la historia
 G.info.actionCount++;
 run("input", "Miro a Inés.");

@@ -34,6 +34,10 @@ stages: tension | 0= | 2=wary rivals for the protagonist | 4=hostile rivals for 
 # the counter-spell: nobody touches the protagonist unless the player writes it in that action
 contact: on
 warn_touch: on
+# a friendly touch (allowed, no mood_neg word) raises these stats by touch_bonus, once per turn; touch_bonus: 0 turns it off
+# this court has no affinity stat; attraction still needs trust>=3
+touch_stats: attraction|trust|obsession
+touch_bonus: 0.3
 # veils and hoods weaken the curse
 damp_words: veil|veiled|hood|hooded
 # rivals: two characters with obsession 5+ who share a scene grow tension

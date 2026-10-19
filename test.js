@@ -240,6 +240,19 @@ const rSel = G.state.lw.rel["201"], rOsw = G.state.lw.rel["202"];
 assert(rSel.yr >= 0.2 && rSel.yr <= 0.4 && rSel.s.obsession > 1, "secret yandere grows even when mocked: " + JSON.stringify(rSel));
 assert(!rOsw.yr && rOsw.s.obsession === 0, "romance:no characters are never yanderes");
 
+// touches count with the contact module off: the player's own touch, and a reply that names no one
+const touches = () => G.state.lw.rel["1"].touched.length;
+const t0 = touches(), trust = () => G.state.lw.rel["1"].s.trust;
+let tr = trust();
+turn("I take Mira's hand.", "She looks away.");
+assert(touches() === t0 + 1 && /^touched: \d+$/m.test(storyCards[0].description), "the player's touch counts");
+assert(Math.abs(trust() - tr - 0.3) < 0.05, "a friendly touch raises trust: " + tr + " -> " + trust());
+turn("I wait for Mira.", "Mira steps closer. She takes your hand.");
+assert(touches() === t0 + 2, "\"She takes your hand\" counts for the only one in the reply");
+tr = trust();
+turn("I grab Mira's wrist and mock her.", "Mira pulls away.");
+assert(touches() === t0 + 3 && trust() <= tr, "a rough touch counts but raises nothing: " + tr + " -> " + trust());
+
 // another script overwrites frontMemory and the context is full: the line goes into the context text, cutting the oldest story
 G.info.actionCount++;
 run("input", "I look at Selene.");
