@@ -1969,6 +1969,9 @@ const LW = (() => {
       for (; k < words.length; k++) { ch = findChar(X, words.slice(k).join(" ")); if (ch && L.rel[ch.id]) break; }
       if (k === words.length) return m;
       const [tx, rest] = splitThought(t);
+      // ponytail: an unquoted "thought" that names its own thinker and has no I/me/my/we is narration under a thought tag:
+      // the tag goes, the text stays, nothing is stored
+      if (!/^[*_]*[«"“]/.test(String(t).trim()) && lastPos(ch, tx) >= 0 && !/\b(?:I|me|my|mine|myself|we|us|our|ours|I'm|I'd|I'll|I've|I’m|I’d|I’ll|I’ve)\b/.test(tx)) return ind + [tx, rest].filter(Boolean).join(" ");
       const shown = grab(ch, tx, sg);
       if (shown == null) return m;
       if (!showTh) removed = true;

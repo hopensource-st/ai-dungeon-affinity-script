@@ -300,6 +300,10 @@ const ten = () => G.state.lw.tension["1|2"] || 0, ten0 = ten();
 for (let i = 0; i < 3; i++) turn("I sit down.", "Mira and Tobin sit at the table, turn " + i + ".");
 assert(Math.abs(ten() - ten0 - 0.5) < 0.01, "one rise in one scene: " + ten0 + " -> " + ten());
 
+// narration under a thought tag (it names its own thinker, nothing in the first person): kept as story, not stored
+const tagged = turn("I wait.", "Mira thinks: Tobin's grip tightens on the mug, and Mira's eyes narrow at the door.");
+assert(tagged === "Tobin's grip tightens on the mug, and Mira's eyes narrow at the door." && !/^t: Tobin's grip/m.test(storyCards[0].description), "narration kept: " + tagged);
+
 // /think holds until the thought arrives: a reply that skips it does not cancel it
 run("input", "/think Mira");
 turn("I wait.", "Mira polishes a glass.");

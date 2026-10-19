@@ -2001,6 +2001,9 @@ const LW = (() => {
       for (; k < words.length; k++) { ch = findChar(X, words.slice(k).join(" ")); if (ch && L.rel[ch.id]) break; }
       if (k === words.length) return m;
       const [tx, rest] = splitThought(t);
+      // ponytail: un "pensamiento" sin comillas que nombra a quien piensa y no tiene nada en primera persona (yo, me, mi, nos...)
+      // es narración con etiqueta: la etiqueta se va, el texto se queda y no se guarda nada
+      if (!/^[*_]*[«"“]/.test(String(t).trim()) && lastPos(ch, tx) >= 0 && !/(?<!\p{L})(?:yo|me|mi|mis|mí|conmigo|nos|nuestr\p{L}*|nosotr\p{L}*|I|me|my|we|our)(?!\p{L})/iu.test(tx)) return ind + [tx, rest].filter(Boolean).join(" ");
       const shown = grab(ch, tx, sg);
       if (shown == null) return m;
       if (!showTh) removed = true;
