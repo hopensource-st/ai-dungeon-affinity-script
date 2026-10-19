@@ -1974,7 +1974,7 @@ const LW = (() => {
       if (!tx) return null;
       const words = tx.split(/\s+/), cap = X.cfg.s.thoughts_words * 2;
       if (words.length > cap) tx = words.slice(0, cap).join(" ") + "…";
-      if (found.length < Math.max(2, X.cfg.s.thoughts_max) && !found.some((f) => f.ch.id === ch.id)) found.push({ ch, text: tx, sg });
+      if (!found.some((f) => f.ch.id === ch.id)) found.push({ ch, text: tx, sg });   // todo pensamiento que sale de la historia se guarda
       return ch.first + " piensa: «" + tx + "»";
     };
     // el pensamiento acaba en su comilla de cierre; sin comillas, en una frase que empieza por el nombre de un personaje
@@ -2009,6 +2009,8 @@ const LW = (() => {
       if (!showTh) removed = true;
       return ind + [showTh ? words.slice(0, k).concat(shown).join(" ") : "", rest].filter(Boolean).join(" ");
     };
+    // "Octavia (-): «...»" se salta "piensa": un nombre conocido con una señal y dos puntos también es un pensamiento
+    body = body.replace(/(^[ \t]*|(?<=[.!?…»"”)*_][ \t]+))[*_]*(\p{Lu}[\p{L}\p{N}_'’\-]*(?: [\p{L}\p{N}_'’\-]+){0,2})[*_]*\s*\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*)\s*\)\s*:[ \t]*/gmu, (m, ind, nm, sg) => (findChar(X, nm) ? ind + nm + " piensa (" + sg + "): " : m));
     for (let i = 0, prev = null; i < 6 && prev !== body; i++) { prev = body; body = body.replace(THRE, onThink); }
     // también en mitad de un párrafo, entre «», "" o “”
     body = body.replace(/(\p{Lu}[\p{L}\p{N}_'’\-]*(?: [\p{L}\p{N}_'’\-]+){0,2}) (?:piensa|thinks)(?: \(\s*([+\-−=]\s*[\d.]*|\d[\d.]*)\s*\))?: (?:«([^»\n]*)»|"([^"\n]*)"|“([^”\n]*)”)[ \t]*/gu, (m, nm, sg, q1, q2, q3) => {

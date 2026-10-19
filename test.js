@@ -304,6 +304,14 @@ assert(Math.abs(ten() - ten0 - 0.5) < 0.01, "one rise in one scene: " + ten0 + "
 const tagged = turn("I wait.", "Mira thinks: Tobin's grip tightens on the mug, and Mira's eyes narrow at the door.");
 assert(tagged === "Tobin's grip tightens on the mug, and Mira's eyes narrow at the door." && !/^t: Tobin's grip/m.test(storyCards[0].description), "narration kept: " + tagged);
 
+// "Name (-): «...»" with no "thinks": still a thought, stored and removed
+const noVerb = turn("I wait.", "Tobin (-): «Hero thinks a bow can hide the hunger I feel for them.»\nMira (+): «Hero is so kind; I would do anything to keep them smiling.»\nThe fire crackles.");
+assert(noVerb === "The fire crackles." && /^t: Hero is so kind; I would do anything to keep them smiling\.$/m.test(storyCards[0].description) && /^t: Hero thinks a bow can hide/m.test(storyCards[1].description), "no verb: " + noVerb);
+
+// three characters think in one reply: all three are stored
+turn("I wait.", "Mira thinks (=): «The ale is running low.»\nTobin thinks (=): «The horses need water.»\nSelene thinks (=): «That book was overdue.»\nSilence.");
+assert(/^t: That book was overdue\.$/m.test(storyCards.find((c) => c.id === 201).description), "third thought stored");
+
 // /think holds until the thought arrives: a reply that skips it does not cancel it
 run("input", "/think Mira");
 turn("I wait.", "Mira polishes a glass.");

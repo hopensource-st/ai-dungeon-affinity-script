@@ -1942,7 +1942,7 @@ const LW = (() => {
       if (!tx) return null;
       const words = tx.split(/\s+/), cap = X.cfg.s.thoughts_words * 2;
       if (words.length > cap) tx = words.slice(0, cap).join(" ") + "…";
-      if (found.length < Math.max(2, X.cfg.s.thoughts_max) && !found.some((f) => f.ch.id === ch.id)) found.push({ ch, text: tx, sg });
+      if (!found.some((f) => f.ch.id === ch.id)) found.push({ ch, text: tx, sg });   // every thought removed from the story is stored
       return ch.first + " thinks: «" + tx + "»";
     };
     // the thought ends at its closing quote; with no quotes, at a sentence that starts with a character's name
@@ -1977,6 +1977,8 @@ const LW = (() => {
       if (!showTh) removed = true;
       return ind + [showTh ? words.slice(0, k).concat(shown).join(" ") : "", rest].filter(Boolean).join(" ");
     };
+    // "Octavia (-): «...»" leaves out "thinks": a known name with a sign and a colon is a thought too
+    body = body.replace(/(^[ \t]*|(?<=[.!?…»"”)*_][ \t]+))[*_]*([A-Z][\w'’\-]*(?: [\w'’\-]+){0,2})[*_]*\s*\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*)\s*\)\s*:[ \t]*/gm, (m, ind, nm, sg) => (findChar(X, nm) ? ind + nm + " thinks (" + sg + "): " : m));
     for (let i = 0, prev = null; i < 6 && prev !== body; i++) { prev = body; body = body.replace(THRE, onThink); }
     // mid-paragraph too, in «», "" or “” quotes
     body = body.replace(/([A-Z][\w'’\-]*(?: [\w'’\-]+){0,2}) thinks(?: \(\s*([+\-−=]\s*[\d.]*|\d[\d.]*)\s*\))?: (?:«([^»\n]*)»|"([^"\n]*)"|“([^”\n]*)”)[ \t]*/g, (m, nm, sg, q1, q2, q3) => {
