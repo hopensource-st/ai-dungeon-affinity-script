@@ -25,8 +25,8 @@ const LW = (() => {
   const WBLOCK = /<<LWW\n[\s\S]*?\nLWW>>/;
   const BASERE = /^[ \t]*base:[^\n]*\n?/gim;
   // "Mira piensa (+): «...»" (también vale "thinks", por si la IA escribe en inglés)
-  const THSTRIP = /^[ \t]*\p{Lu}[\p{L}\p{N}_'’\- ]{0,30} (?:piensa|thinks)(?: \(\s*(?:[+\-−=]\s*[\d.]*|\d[\d.]*)\s*\))?: «[^»\n]*»[ \t]*\n?/gmu;
-  const THRE = /(^[ \t]*|(?<=[.!?…»"”)*_][ \t]+))[*_]*(\p{Lu}[\p{L}\p{N}_'’\-]*(?: [\p{L}\p{N}_'’\-]+){0,3}?)[*_]*\s+(?:piensa|thinks)\s*(?:\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*)\s*\)\s*)?(?::\s*|(?=\s*[«"“]))[*_]*\s*(.+?)\s*[»"”]?[*_]*[ \t]*$/gmu;
+  const THSTRIP = /^[ \t]*\p{Lu}[\p{L}\p{N}_'’\- ]{0,30} (?:piensa|thinks)(?: \(\s*(?:[+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\))?: «[^»\n]*»[ \t]*\n?/gmu;
+  const THRE = /(^[ \t]*|(?<=[.!?…»"”)*_][ \t]+))[*_]*(\p{Lu}[\p{L}\p{N}_'’\-]*(?: [\p{L}\p{N}_'’\-]+){0,3}?)[*_]*\s+(?:piensa|thinks)\s*(?:\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\)\s*)?(?::\s*|(?=\s*[«"“]))[*_]*\s*(.+?)\s*[»"”]?[*_]*[ \t]*$/gmu;
 
   // ---- defaults (used when there is no Config card) ------------------------
   const DEF = {
@@ -1345,7 +1345,7 @@ const LW = (() => {
     const mood = X.cfg.s.mood;
     return "Empieza la respuesta con " + names.map((n) => n + (mood ? " piensa (x): «...»" : " piensa: «...»")).join(" ") +
       ": una frase nueva en primera persona cada uno, en castellano, de menos de " + X.cfg.s.thoughts_words + " palabras, nombrando a las personas, no con pronombres" +
-      (mood ? "; x es + si se siente más cerca del protagonista, - si más lejos, = si igual" : "") +
+      (mood ? "; cambia la x por + si se siente más cerca del protagonista, - si más lejos, = si igual" : "") +
       (tones.length ? "; tono: " + tones.join(", ") : "") + ". Después sigue con la historia.";
   };
 
@@ -1434,7 +1434,7 @@ const LW = (() => {
         for (const t of String(h.text || "").replace(THSTRIP, "").split(/(?<=[.!?»"”])\s+/)) { const n = norm(t); if (n.length >= 30) seen.add(n); }
       }
       const kept = out.split("\n").map((line) => {
-        if (/ (?:piensa|thinks)(?: \(\s*(?:[+\-−=]\s*[\d.]*|\d[\d.]*)\s*\))?: «/.test(line)) return line;
+        if (/ (?:piensa|thinks)(?: \(\s*(?:[+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\))?: «/.test(line)) return line;
         const sents = line.split(/(?<=[.!?»"”])\s+/).filter((t) => {
           const n = norm(t);
           if (n.length < 30) return true;
@@ -2013,7 +2013,7 @@ const LW = (() => {
     body = body.replace(/(^[ \t]*|(?<=[.!?…»"”)*_][ \t]+))[*_]*(\p{Lu}[\p{L}\p{N}_'’\-]*(?: [\p{L}\p{N}_'’\-]+){0,2})[*_]*\s*\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*)\s*\)\s*:[ \t]*/gmu, (m, ind, nm, sg) => (findChar(X, nm) ? ind + nm + " piensa (" + sg + "): " : m));
     for (let i = 0, prev = null; i < 6 && prev !== body; i++) { prev = body; body = body.replace(THRE, onThink); }
     // también en mitad de un párrafo, entre «», "" o “”
-    body = body.replace(/(\p{Lu}[\p{L}\p{N}_'’\-]*(?: [\p{L}\p{N}_'’\-]+){0,2}) (?:piensa|thinks)(?: \(\s*([+\-−=]\s*[\d.]*|\d[\d.]*)\s*\))?: (?:«([^»\n]*)»|"([^"\n]*)"|“([^”\n]*)”)[ \t]*/gu, (m, nm, sg, q1, q2, q3) => {
+    body = body.replace(/(\p{Lu}[\p{L}\p{N}_'’\-]*(?: [\p{L}\p{N}_'’\-]+){0,2}) (?:piensa|thinks)(?: \(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\))?: (?:«([^»\n]*)»|"([^"\n]*)"|“([^”\n]*)”)[ \t]*/gu, (m, nm, sg, q1, q2, q3) => {
       const q = q1 != null ? q1 : q2 != null ? q2 : q3;
       const words = nm.split(" ");
       for (let k = 0; k < words.length; k++) {

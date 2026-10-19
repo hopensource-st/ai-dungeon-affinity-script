@@ -308,13 +308,17 @@ assert(tagged === "Tobin's grip tightens on the mug, and Mira's eyes narrow at t
 const noVerb = turn("I wait.", "Tobin (-): «Hero thinks a bow can hide the hunger I feel for them.»\nMira (+): «Hero is so kind; I would do anything to keep them smiling.»\nThe fire crackles.");
 assert(noVerb === "The fire crackles." && /^t: Hero is so kind; I would do anything to keep them smiling\.$/m.test(storyCards[0].description) && /^t: Hero thinks a bow can hide/m.test(storyCards[1].description), "no verb: " + noVerb);
 
+// "(x)" copied from the instruction: stored as a thought with no sign
+const xs = turn("I wait.", "Mira thinks (x): The girl walks as if the palace might stop her, not the other way around.");
+assert(!/thinks/.test(xs) && /^t: The girl walks as if the palace might stop her, not the other way around\.$/m.test(storyCards[0].description), "(x): " + xs);
+
 // three characters think in one reply: all three are stored
 turn("I wait.", "Mira thinks (=): «The ale is running low.»\nTobin thinks (=): «The horses need water.»\nSelene thinks (=): «That book was overdue.»\nSilence.");
 assert(/^t: That book was overdue\.$/m.test(storyCards.find((c) => c.id === 201).description), "third thought stored");
 
 // /think holds until the thought arrives: a reply that skips it does not cancel it
 run("input", "/think Mira");
-turn("I wait.", "Mira polishes a glass.");
+turn("I wait for Mira.", "Mira polishes a glass.");
 assert(G.state.lw.w.force.includes("1") && /Mira thinks \(x\)/.test(G.state.memory.frontMemory), "still asked after a reply with no thought: " + JSON.stringify(G.state.lw.w.force) + " " + G.state.memory.frontMemory);
 turn("I wait.", "Mira thinks (=): «The glasses never stay clean.»\nMira sighs.");
 assert(!G.state.lw.w.force.includes("1"), "done once the thought arrives");
