@@ -672,7 +672,7 @@ const LW = (() => {
       if (quiet.length) add(5, "Pronto, dale a " + andList(quiet) + " un momento con el protagonista.");
     }
     add(1, tp ? thoughtInstr(X, tp, L) : "");
-    if (W.pendLog.length) add(1, "Termina la respuesta con {log: una frase en pasado que resuma lo que acaba de pasar}.");
+    if (W.pendLog.length) add(1, "Pon {log: una frase en pasado que resuma lo que acaba de pasar} sola en la primera línea de la respuesta.");
     if (s.contact) {
       const names = L.allow.map((id) => X.byId[id] && X.byId[id].first).filter(Boolean);
       if (names.length) add(0, "El protagonista permite que " + names.join(" y ") + " le toque solo en esta acción.");
@@ -1947,6 +1947,7 @@ const LW = (() => {
     body = body.replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}]*))?\}/gi, onMark)
       .replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}\n]*))?$/gim, onMark)
       .replace(/[ \t]{2,}/g, " ").replace(/\s+$/, "");
+    if (/^\s*\{\s*(?:flag|event|beat|log)\b/i.test(text)) body = text.match(/^\s*/)[0] + body.replace(/^\s+/, "");   // una marca en la primera línea
     // a twist or beat that ended last turn: the AI was asked for a {log:...}; without one, the generic text goes in
     if (W.pendLog.length) { if (!logged) W.pendLog.forEach((l) => addLog(X, W, l)); W.pendLog = []; }
 

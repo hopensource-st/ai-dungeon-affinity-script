@@ -270,6 +270,10 @@ assert(/^Mira considers you for a moment, her fingers drumming on the bar\.$/.te
 const unclosed = turn("I wait.", "Mira nods.\n{log: Mira agreed to keep the secret.");
 assert(!/\{log/.test(unclosed) && G.state.lw.w.log.some((l) => /Mira agreed to keep the secret/.test(l)), "unclosed log: " + unclosed);
 
+// the log on the first line, as the AI is asked: it leaves no blank line behind
+const first = turn("I wait.", "{log: Mira locked the cellar for the night.}\nMira yawns.");
+assert.strictEqual(first, "Mira yawns.");
+
 // memories: a chronicle entry that names a character stays in their Notes, and comes back once the chronicle has moved on
 turn("I wait.", "Mira sighs. {log: Mira forgave the protagonist for the broken mug.}");
 assert(/^m: \(Day \d+\) Mira forgave the protagonist for the broken mug\.$/m.test(storyCards[0].description), "memory in Mira's Notes:\n" + storyCards[0].description);

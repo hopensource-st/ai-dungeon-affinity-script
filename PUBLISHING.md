@@ -64,7 +64,7 @@ TIPS
 WHAT'S NEW IN 1.1.4
 • Obsession (and any steady stat) rises once per scene, not on every action. How you treat someone still counts on every action.
 • The arc takes its time: each act lasts at least 30 actions (act_turns).
-• A {log: the AI forgets to close is still saved to the chronicle and removed from the story.
+• Chronicle entries are no longer lost: the AI writes them on the first line of its reply, where they cannot be cut off, and one left unclosed is still saved.
 • Thoughts written with no quotes no longer swallow the rest of the line: the next character's thought and the narration stay where they belong.
 • Memories: each character keeps the chronicle moments that name them in their Notes, and remembers them when they are back in the scene.
 

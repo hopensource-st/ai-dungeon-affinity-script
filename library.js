@@ -654,7 +654,7 @@ const LW = (() => {
       if (quiet.length) add(5, "Soon give " + andList(quiet) + " a moment with the protagonist.");
     }
     add(1, tp ? thoughtInstr(X, tp, L) : "");
-    if (W.pendLog.length) add(1, "End the reply with {log: one past-tense sentence summing up what just happened}.");
+    if (W.pendLog.length) add(1, "Put {log: one past-tense sentence summing up what just happened} alone on the first line of the reply.");
     if (s.contact) {
       const names = L.allow.map((id) => X.byId[id] && X.byId[id].first).filter(Boolean);
       if (names.length) add(0, "The protagonist permits " + names.join(" and ") + " to touch them in this action only.");
@@ -1915,6 +1915,7 @@ const LW = (() => {
     body = body.replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}]*))?\}/gi, onMark)
       .replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}\n]*))?$/gim, onMark)
       .replace(/[ \t]{2,}/g, " ").replace(/\s+$/, "");
+    if (/^\s*\{\s*(?:flag|event|beat|log)\b/i.test(text)) body = text.match(/^\s*/)[0] + body.replace(/^\s+/, "");   // a marker on the first line
     // a twist or beat that ended last turn: the AI was asked for a {log:...}; without one, the generic text goes in
     if (W.pendLog.length) { if (!logged) W.pendLog.forEach((l) => addLog(X, W, l)); W.pendLog = []; }
 
