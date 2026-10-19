@@ -169,6 +169,8 @@ assert(tLines.length === 3 && /paint the sign blue/.test(tLines[2]), "thoughts c
 turn("I ask Mira about her day.", "Mira shrugs.");
 assert(/Mira was just thinking: "[^"]*wine\." "[^"]*coins\." "[^"]*blue\."/.test(G.state.memory.frontMemory), "AI gets the last few: " + G.state.memory.frontMemory);
 assert(G.state.lw.rel["1"].th.length === 3, "state keeps only the last few");
+const inl = turn("I wait.", "The fire crackles. Mira thinks (-): \"Nobody here ever pays on time.\" She wipes the bar.");
+assert(!/thinks/.test(inl) && /^t: Nobody here ever pays on time\.$/m.test(storyCards[0].description), "mid-paragraph thought in plain quotes: " + inl);
 
 // chronicle storage: state keeps the latest few, the card keeps everything, a retry does not duplicate
 const chrC = storyCards.find((c) => c.type === "chronicle");
@@ -237,5 +239,19 @@ for (let i = 0; i < 6; i++) turn("I mock Selene and Oswin.", "Selene and Oswin g
 const rSel = G.state.lw.rel["201"], rOsw = G.state.lw.rel["202"];
 assert(rSel.yr >= 0.2 && rSel.yr <= 0.4 && rSel.s.obsession > 1, "secret yandere grows even when mocked: " + JSON.stringify(rSel));
 assert(!rOsw.yr && rOsw.s.obsession === 0, "romance:no characters are never yanderes");
+
+// another script overwrites frontMemory and the context is full: the line goes into the context text, cutting the oldest story
+G.info.actionCount++;
+run("input", "I look at Selene.");
+const line = G.state.lw.pending;
+G.state.memory.frontMemory = "[Another script's note]";
+const story = G.history.slice(-40).map((h) => h.text).join("\n");
+const ctxIn = "AI INSTRUCTIONS\n" + story + "\nI look at Selene.";
+G.info.maxChars = ctxIn.length + 20;
+const ctxOut = run("context", ctxIn).text;
+G.info.maxChars = 8000;
+assert(line && ctxOut.includes(line) && ctxOut.length < ctxIn.length + 20, "line injected within the limit:\n" + ctxOut);
+assert(/^AI INSTRUCTIONS\n/.test(ctxOut) && /\nI look at Selene\.$/.test(ctxOut), "instructions and latest action kept:\n" + ctxOut);
+assert(/another script/i.test(run("input", "/check").text), "/check reports the takeover");
 
 console.log("ok");

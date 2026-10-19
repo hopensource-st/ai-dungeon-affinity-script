@@ -14,7 +14,7 @@ Desde el parche 2.39.0 (agosto de 2026), AI Dungeon tiene **Scripts como conteni
 4. **Marca el escenario como Script.**
 5. **Portada:** una imagen que represente vínculos, recuerdos o hilos entre personajes.
 6. **Publica.** Los escenarios pasan por la moderación automática antes de publicarse.
-7. **Pruébalo como jugador:** en una partida cualquiera (por ejemplo, un escenario ajeno con tarjetas de personaje), añade el Script, juega una acción y escribe `/check`. Debe decir `LW Affinity Engine` y la versión (ahora `1.1.1`) y el número de personajes que ha encontrado.
+7. **Pruébalo como jugador:** en una partida cualquiera (por ejemplo, un escenario ajeno con tarjetas de personaje), añade el Script, juega una acción y escribe `/check`. Debe decir `LW Affinity Engine` y la versión (ahora `1.1.2`) y el número de personajes que ha encontrado.
 
 ### Al actualizar
 1. Sube el número en `const VERSION = "1.0.0"` (línea 8 de `library.js`): `1.0.1` para arreglos, `1.1.0` para funciones nuevas.
@@ -59,7 +59,11 @@ COMMANDS (type them in Do, Say or Story)
 TIPS
 • Keep your own character out: add "skip: YourName" to the LW Config card.
 • Choose your own yandere: put [cfg obsession:0.3] in that character's card Notes. No surprise yanderes: add "yandere_chance: 0" to LW Config.
-• Using another script that also writes Front Memory? Add "inject: text" to LW Config.
+• Another script also writes Front Memory? The engine notices and sends its line another way. If characters still never think, add "inject: text" to LW Config.
+
+WHAT'S NEW IN 1.1.2
+• Thoughts the AI writes in the middle of a paragraph, with plain "quotes", are now stored too.
+• Works next to scripts that overwrite Front Memory: the engine notices and puts its line into the context, even when it is full.
 
 WHAT'S NEW IN 1.1.1
 • No more thought diary: the latest 20 thoughts stay in the Notes block, under the stats, and the AI remembers the last 3.
@@ -90,6 +94,6 @@ Before the story begins, tell it who you are and where you stand. Write your fir
 ---
 
 ## Si se combina con otros Scripts
-- **Front Memory:** el motor escribe ahí la línea para la IA. Si otro Script también lo usa, uno pisará al otro; con `inject: text` en LW Config, el motor la mete en el contexto.
+- **Front Memory:** el motor escribe ahí la línea para la IA. Si otro Script la pisa, el motor lo detecta y mete la línea en el contexto, recortando lo más antiguo de la historia si va lleno (`/check` lo dice). Si el otro Script la pisa más tarde y el motor no llega a verlo, pon `inject: text` en LW Config.
 - **Marcas sueltas:** si ves en la historia restos como `{log: ...}` o `Mira thinks: «...»`, es que otro Script toca el texto antes que este. Prueba a cambiar el orden de los Scripts en la partida.
 - **Su propio espacio:** el motor solo usa `state.lw` y sus tarjetas `LW`, así que no choca con los datos de otros Scripts.

@@ -5,7 +5,7 @@
 // Stats, relations, thoughts, chronicle, events, arc, clock, scenes, cleaner, card creation, commands.
 // ============================================================================
 const LW = (() => {
-  const VERSION = "1.1.1";                                    // shown by /check; bump it on every published update
+  const VERSION = "1.1.2";                                    // shown by /check; bump it on every published update
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const num = (v, d) => { const n = parseFloat(v); return isNaN(n) ? d : n; };
   const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -787,6 +787,7 @@ const LW = (() => {
         (d ? "Last context (action " + d.turn + "): " + d.chars + " chars, " + d.stripped + " hidden marker(s) removed, injected line found: " + (d.injected ? "yes" : "no") + "." +
         (String(X.cfg.s.inject).toLowerCase() === "text" ? "" :
           " frontMemory set by the script: " + ((state.memory && state.memory.frontMemory) ? state.memory.frontMemory.length + " chars" : "empty") +
+          (d.taken ? " Another script overwrote frontMemory, so the line went into the context text instead." : "") +
           (d.injected ? "" : " (a 'no' here is normal: AI Dungeon adds frontMemory after this hook, so check the context viewer for the bracketed line; if it is missing there, add 'inject: text' to the Config card)") + ".")
         : "No context seen yet; play one turn and run /check again.");
     }
@@ -1762,8 +1763,8 @@ const LW = (() => {
     }
     L.lastBlock = block;
     L.lastAction = createNow ? "" : rest.replace(MARK, "");
-    if (String(X.cfg.s.inject).toLowerCase() === "text") L.pending = block;
-    else { state.memory = state.memory || {}; state.memory.frontMemory = block; L.pending = ""; }
+    L.pending = block;                                              // kept for the context hook in either mode
+    if (String(X.cfg.s.inject).toLowerCase() !== "text") { state.memory = state.memory || {}; state.memory.frontMemory = block; }
     if (pc && pc.cmd === "peek") note = block ? "The AI is told: " + block : "Nothing is being sent to the AI right now.";
     wPersist(X, L);
     let out = text;
@@ -1776,6 +1777,26 @@ const LW = (() => {
     return { text: out };
   };
 
+  // a full context: cut the oldest story text still in it (found through history) so the line fits;
+  // the instructions and cards at the top and the latest text stay
+  // ponytail: history entries are matched by their first 60 characters; if none is found, nothing is cut
+  const makeRoom = (out, need, room) => {
+    const over = out.length + need - room + 1;
+    if (!room || over <= 0) return out;
+    let i = -1;                                                  // the earliest place any history text appears (texts can repeat)
+    for (const h of history || []) {
+      const t = String(h.text || "").trim().slice(0, 60), k = t.length < 20 ? -1 : out.indexOf(t);
+      if (k >= 0 && (i < 0 || k < i)) i = k;
+    }
+    if (i >= 0) {
+      let j = i + over;
+      const nl = out.indexOf("\n", j);
+      if (nl >= 0 && nl - j < 300) j = nl;                       // end the cut at a line break when one is near
+      return j < out.lastIndexOf("\n") ? out.slice(0, i) + out.slice(j) : out;
+    }
+    return out;
+  };
+
   const onContext = (text) => {
     const X = ctxNow(), L = S();
     const markers = (text.match(/<<LW[RW]?\n|\[cfg|\[LW:/g) || []).length;
@@ -1783,8 +1804,12 @@ const LW = (() => {
     L.dbg = { turn: info.actionCount, chars: text.length, stripped: markers, injected: !!probe && text.includes(probe) };
     let out = text.replace(MARK, "").replace(RELBLOCK, "").replace(WBLOCK, "").replace(BLOCK, "").replace(CFGRE, "")
       .replace(BASERE, "").replace(THSTRIP, "").replace(/\n{3,}/g, "\n\n");
-    if (String(X.cfg.s.inject).toLowerCase() === "text" && L.pending) {
+    // text mode, or frontMemory overwritten by another script since onInput: the line goes into the context itself
+    const fm = state.memory && state.memory.frontMemory;
+    L.dbg.taken = String(X.cfg.s.inject).toLowerCase() !== "text" && !!L.pending && fm !== L.pending;
+    if (L.pending && (String(X.cfg.s.inject).toLowerCase() === "text" || L.dbg.taken)) {
       const room = info.maxChars || 0;
+      out = makeRoom(out, L.pending.length + 1, room);
       if (!room || out.length + L.pending.length < room) {
         const i = out.lastIndexOf("\n");
         out = i === -1 ? L.pending + "\n" + out : out.slice(0, i) + "\n" + L.pending + out.slice(i);
@@ -1868,7 +1893,9 @@ const LW = (() => {
       removed = true;
       return "";
     });
-    body = body.replace(/([A-Z][\w'’\-]*(?: [\w'’\-]+){0,2}) thinks(?: \(([+\-=])\))?: «([^»\n]*)»[ \t]*/g, (m, nm, sg, q) => {
+    // mid-paragraph too, in «», "" or “” quotes
+    body = body.replace(/([A-Z][\w'’\-]*(?: [\w'’\-]+){0,2}) thinks(?: \(([+\-=])\))?: (?:«([^»\n]*)»|"([^"\n]*)"|“([^”\n]*)”)[ \t]*/g, (m, nm, sg, q1, q2, q3) => {
+      const q = q1 != null ? q1 : q2 != null ? q2 : q3;
       const words = nm.split(" ");
       for (let k = 0; k < words.length; k++) {
         const ch = findChar(X, words.slice(k).join(" "));

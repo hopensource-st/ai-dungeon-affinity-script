@@ -22,7 +22,7 @@ const modifier = (text) => {
 modifier(text)
 ```
 
-The engine uses `state.memory.frontMemory` to talk to the AI. If another script also writes it, add `inject: text` to the Config card.
+The engine uses `state.memory.frontMemory` to talk to the AI. If another script overwrites it, the engine notices and puts its line into the context text instead, cutting the oldest story text when the context is full (`/check` says so). If thoughts still never appear, add `inject: text` to the Config card to always use the context text.
 
 ## What happens on the first turn
 
