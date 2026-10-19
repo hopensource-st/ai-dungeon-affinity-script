@@ -328,6 +328,14 @@ G.state.lw.w.pendLog = [""];
 const bare = turn("I wait.", "{The protagonist comments on the irony of the curse}\nMira laughs.");
 assert(bare === "Mira laughs." && G.state.lw.w.log.some((l) => /comments on the irony of the curse/.test(l)), "bare braces: " + bare);
 
+// a key of the AI's own, "{just happened: ...}", closed or not: its text is the log, the key is dropped
+G.state.lw.w.pendLog = [""]; G.state.lw.w.asked = true;
+const own = turn("I wait.", "{just happened: You declined the King's lavish offer in favor of modesty.}\nMira nods.");
+assert(own === "Mira nods." && G.state.lw.w.log.some((l) => /\] You declined the King's lavish offer in favor of modesty\.$/.test(l)), "own key: " + own);
+G.state.lw.w.pendLog = [""]; G.state.lw.w.asked = true;
+const own2 = turn("I wait.", "{just happened: Mira poured a second cup.\nMira smiles.");
+assert(own2 === "Mira smiles." && G.state.lw.w.log.some((l) => /\] Mira poured a second cup\.$/.test(l)), "own key, unclosed: " + own2);
+
 // a sign written as a number, (+1) or (-2), still counts as + or -
 const aff1 = G.state.lw.rel["1"].s.affinity;
 turn("I wait.", "Mira thinks (+1): The way Tobin walks, so effortless, like he belongs here.\nMira smiles.");

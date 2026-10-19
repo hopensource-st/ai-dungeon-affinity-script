@@ -1919,8 +1919,13 @@ const LW = (() => {
     body = body.replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}]*))?\}/gi, onMark)
       .replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}\n]*))?$/gim, onMark)
       .replace(/[ \t]{2,}/g, " ").replace(/\s+$/, "");
-    // bare braces with no key, "{The protagonist laughs}": the log when one was asked for, and out of the story either way
-    body = body.replace(/\{([^{}\n:]{3,})\}[ \t]*/g, (m, v) => { if (W.pendLog.length && !logged) { addLog(X, W, v); logged = true; } return ""; });
+    // any other braces, "{The protagonist laughs}" or "{just happened: ...}" (a key of the AI's own, up to 3 words, is dropped):
+    // the log when one was asked for, and out of the story either way (braces never belong in the prose)
+    body = body.replace(/\{([^{}\n]{3,})(?:\}[ \t]*|$)/gm, (m, v) => {
+      const t = v.replace(/^\s*[^:\s][^:]{0,30}?:\s*(?=\S)/, (k) => (k.trim().split(/\s+/).length <= 3 ? "" : k)).trim();
+      if (t && W.pendLog.length && !logged) { addLog(X, W, t); logged = true; }
+      return "";
+    });
     if (/^\s*\{/.test(text)) body = text.match(/^\s*/)[0] + body.replace(/^\s+/, "");   // a marker on the first line
     // a twist or beat that ended last turn: the AI was asked for a {log:...}; without one, the generic text goes in
     // ponytail: a Continue skips the Input hook, so nothing was asked: the request waits for the next action

@@ -1951,8 +1951,13 @@ const LW = (() => {
     body = body.replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}]*))?\}/gi, onMark)
       .replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}\n]*))?$/gim, onMark)
       .replace(/[ \t]{2,}/g, " ").replace(/\s+$/, "");
-    // llaves sueltas sin clave, "{La protagonista se ríe}": son el log si se había pedido uno, y salen de la historia igualmente
-    body = body.replace(/\{([^{}\n:]{3,})\}[ \t]*/g, (m, v) => { if (W.pendLog.length && !logged) { addLog(X, W, v); logged = true; } return ""; });
+    // cualquier otra llave, "{La protagonista se ríe}" o "{acaba de pasar: ...}" (una clave inventada, de hasta 3 palabras, se quita):
+    // es el log si se había pedido uno, y sale de la historia igualmente (las llaves nunca son parte de la prosa)
+    body = body.replace(/\{([^{}\n]{3,})(?:\}[ \t]*|$)/gm, (m, v) => {
+      const t = v.replace(/^\s*[^:\s][^:]{0,30}?:\s*(?=\S)/, (k) => (k.trim().split(/\s+/).length <= 3 ? "" : k)).trim();
+      if (t && W.pendLog.length && !logged) { addLog(X, W, t); logged = true; }
+      return "";
+    });
     if (/^\s*\{/.test(text)) body = text.match(/^\s*/)[0] + body.replace(/^\s+/, "");   // una marca en la primera línea
     // a twist or beat that ended last turn: the AI was asked for a {log:...}; without one, the generic text goes in
     // ponytail: a Continue skips the Input hook, so nothing was asked: the request waits for the next action
