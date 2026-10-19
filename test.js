@@ -274,6 +274,11 @@ assert(!/\{log/.test(unclosed) && G.state.lw.w.log.some((l) => /Mira agreed to k
 const first = turn("I wait.", "{log: Mira locked the cellar for the night.}\nMira yawns.");
 assert.strictEqual(first, "Mira yawns.");
 
+// a sign written as a number, (+1) or (-2), still counts as + or -
+const aff1 = G.state.lw.rel["1"].s.affinity;
+turn("I wait.", "Mira thinks (+1): The way Tobin walks, so effortless, like he belongs here.\nMira smiles.");
+assert(/^t: The way Tobin walks, so effortless, like he belongs here\.$/m.test(storyCards[0].description) && G.state.lw.rel["1"].s.affinity > aff1, "(+1) thought stored and counted");
+
 // a mangled thought tag with no thought in it leaves the story
 assert.strictEqual(turn("I bow.", "(Mira: =) She curtsies deeply."), "She curtsies deeply.");
 

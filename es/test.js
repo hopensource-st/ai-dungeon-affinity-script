@@ -102,6 +102,10 @@ assert(/^Inés te observa un momento, tamborileando en la barra\.$/.test(una.tri
 const abierto = turn("Espero.", "Inés asiente.\n{log: Inés prometió guardar el secreto.");
 assert(!/\{log/.test(abierto) && G.state.lw.w.log.some((l) => /Inés prometió guardar el secreto/.test(l)), "log sin cerrar: " + abierto);
 
+// una señal escrita como número, (-2), cuenta como -
+const sal = turn("Espero.", "Inés piensa (-2): José siempre llega tarde a todo.\nInés suspira.");
+assert(!/piensa/.test(sal) && /^t: José siempre llega tarde a todo\.$/m.test(notes(1)), "pensamiento con (-2): " + sal);
+
 // una etiqueta de pensamiento deformada y sin pensamiento sale de la historia
 assert.strictEqual(turn("Hago una reverencia.", "(Inés: =) Hace una reverencia profunda."), "Hace una reverencia profunda.");
 

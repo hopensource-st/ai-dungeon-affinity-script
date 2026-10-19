@@ -18,8 +18,8 @@ const LW = (() => {
   const MARK = /[ \t]*\[LW:[^\]]*\]/g;
   const WBLOCK = /<<LWW\n[\s\S]*?\nLWW>>/;
   const BASERE = /^[ \t]*base:[^\n]*\n?/gim;
-  const THSTRIP = /^[ \t]*[A-Z][\w'’\- ]{0,30} thinks(?: \([+\-=]\))?: «[^»\n]*»[ \t]*\n?/gm;
-  const THRE = /^([ \t]*)[*_]*([A-Z][\w'’\-]*(?: [\w'’\-]+){0,3}?)[*_]*\s+thinks\s*(?:\(([+\-=])\)\s*)?(?::\s*|(?=\s*[«"“]))[*_]*\s*(.+?)\s*[»"”]?[*_]*[ \t]*$/gm;
+  const THSTRIP = /^[ \t]*[A-Z][\w'’\- ]{0,30} thinks(?: \(\s*(?:[+\-−=]\s*[\d.]*|\d[\d.]*)\s*\))?: «[^»\n]*»[ \t]*\n?/gm;
+  const THRE = /^([ \t]*)[*_]*([A-Z][\w'’\-]*(?: [\w'’\-]+){0,3}?)[*_]*\s+thinks\s*(?:\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*)\s*\)\s*)?(?::\s*|(?=\s*[«"“]))[*_]*\s*(.+?)\s*[»"”]?[*_]*[ \t]*$/gm;
 
   // ---- defaults (used when there is no Config card) ------------------------
   const DEF = {
@@ -1408,7 +1408,7 @@ const LW = (() => {
         for (const t of String(h.text || "").replace(THSTRIP, "").split(/(?<=[.!?»"”])\s+/)) { const n = norm(t); if (n.length >= 30) seen.add(n); }
       }
       const kept = out.split("\n").map((line) => {
-        if (/ thinks(?: \([+\-=]\))?: «/.test(line)) return line;
+        if (/ thinks(?: \(\s*(?:[+\-−=]\s*[\d.]*|\d[\d.]*)\s*\))?: «/.test(line)) return line;
         const sents = line.split(/(?<=[.!?»"”])\s+/).filter((t) => {
           const n = norm(t);
           if (n.length < 30) return true;
@@ -1925,6 +1925,10 @@ const LW = (() => {
     const found = [], showTh = !!X.cfg.s.thoughts_show;
     let removed = false;
     const grab = (ch, raw, sg) => {
+      if (sg != null) {                                          // "+1", "-2", "0.5", "−" become + - =
+        const t = String(sg).replace(/−/g, "-").replace(/\s/g, ""), n = t === "+" ? 1 : t === "-" ? -1 : parseFloat(t);
+        sg = t === "=" || n === 0 ? "=" : n > 0 ? "+" : n < 0 ? "-" : undefined;
+      }
       const segs = [];
       String(raw).replace(/«([^»]*)»/g, (m, q) => { segs.push(q); return m; });
       let tx = (segs.length ? segs[0] : String(raw).replace(/^[«"“\s]+|[»"”\s]+$/g, "")).trim();
@@ -1962,7 +1966,7 @@ const LW = (() => {
     };
     for (let i = 0, prev = null; i < 6 && prev !== body; i++) { prev = body; body = body.replace(THRE, onThink); }
     // mid-paragraph too, in «», "" or “” quotes
-    body = body.replace(/([A-Z][\w'’\-]*(?: [\w'’\-]+){0,2}) thinks(?: \(([+\-=])\))?: (?:«([^»\n]*)»|"([^"\n]*)"|“([^”\n]*)”)[ \t]*/g, (m, nm, sg, q1, q2, q3) => {
+    body = body.replace(/([A-Z][\w'’\-]*(?: [\w'’\-]+){0,2}) thinks(?: \(\s*([+\-−=]\s*[\d.]*|\d[\d.]*)\s*\))?: (?:«([^»\n]*)»|"([^"\n]*)"|“([^”\n]*)”)[ \t]*/g, (m, nm, sg, q1, q2, q3) => {
       const q = q1 != null ? q1 : q2 != null ? q2 : q3;
       const words = nm.split(" ");
       for (let k = 0; k < words.length; k++) {
@@ -1978,7 +1982,7 @@ const LW = (() => {
       return m;
     });
     // a mangled thought tag with no thought in it, like "(Elowen: =)" or "(Elowen thinks: +)": it leaves the story
-    body = body.replace(/\(\s*([A-Z][\w'’\-]*(?: [\w'’\-]+){0,2})(?:\s+thinks)?\s*:?\s*[+\-=]\s*\)[ \t]*/g, (m, nm) => {
+    body = body.replace(/\(\s*([A-Z][\w'’\-]*(?: [\w'’\-]+){0,2})(?:\s+thinks)?\s*:?\s*(?:[+\-−=]\s*[\d.]*|\d[\d.]*)\s*\)[ \t]*/g, (m, nm) => {
       if (!findChar(X, nm)) return m;
       removed = true;
       return "";
