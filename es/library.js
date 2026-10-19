@@ -55,6 +55,8 @@ const LW = (() => {
       protagonista: "el",
       // nombre_protagonista: cómo se llama el personaje del jugador; la crónica siempre lo llama así (vacío: "el protagonista")
       nombre_protagonista: "",
+      // style: se envía a la IA cada turno (vacío: nada)
+      style: "Estilo: prosa literaria; los diálogos van dentro de la narración, con raya o comillas y verbo de habla, nunca como líneas de guion (Nombre: «...»).",
       max_present: 4, max_stats: 3, contact: false, warn_touch: false, inject: "frontMemory",
       accel_scenes: 40, early_actions: 0, damp_words: "", damp_factor: 0.5,
       tension_stat: "afinidad", tension_min: 6, tension_rate: 0.5, tension_max: 10, max_pairs: 3,
@@ -681,6 +683,7 @@ const LW = (() => {
     if (W.pendLog.length) add(1, "Pon {log: una frase en pasado y en tercera persona, nombrando " + (String(s.nombre_protagonista || "").trim() ? "a " + String(s.nombre_protagonista).trim() : "al protagonista") + ", que resuma lo que acaba de pasar} sola en la primera línea de la respuesta.");
     add(1, tp ? thoughtInstr(X, tp, L).replace(/^Empieza la respuesta con/, W.pendLog.length ? "Tras esa línea, escribe" : "Empieza la respuesta con") : "");
     // los pensamientos los guarda el motor: la prosa solo cuenta lo que el protagonista ve y oye
+    add(1, typeof s.style === "string" ? s.style.trim() : "");     // "style: off" o vacío: nada
     if (s.thoughts && !W.off) add(0, "No narres nunca lo que piensan los demás personajes; cuenta solo lo que el protagonista ve y oye" + (tp ? ", aparte de las líneas de pensamiento pedidas arriba" : "") + ".");
     if (s.contact) {
       const names = L.allow.map((id) => X.byId[id] && X.byId[id].first).filter(Boolean);
@@ -2070,9 +2073,9 @@ const LW = (() => {
       if (!showTh) removed = true;
       return ind + [showTh ? words.slice(0, k).concat(shown).join(" ") : "", rest].filter(Boolean).join(" ");
     };
-    // "Octavia (-): ...", "Octavia: (-) ..." u "Octavia: «...»" se saltan "piensa": un nombre conocido, dos puntos y una señal o « también es un pensamiento
-    // ponytail: en castellano « » también sirve para diálogos, pero "Nombre: «...»" a principio de frase es formato de guion, no prosa
-    body = body.replace(/(^[ \t]*|(?<=[.!?…»"”)*_][ \t]+))[*_]*(\p{Lu}[\p{L}\p{N}_'’\-]*(?: [\p{L}\p{N}_'’\-]+){0,2})[*_]*\s*(?:\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\)\s*:|:\s*\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\)|:(?=\s*[*_]*[«"“]))[ \t]*/gmu,
+    // "Octavia (-): ..." u "Octavia: (-) ..." se saltan "piensa": un nombre conocido, dos puntos y una señal también es un pensamiento
+    // ("Octavia: «...»" no: en castellano « » también es diálogo, y la IA a veces lo escribe en formato de guion)
+    body = body.replace(/(^[ \t]*|(?<=[.!?…»"”)*_][ \t]+))[*_]*(\p{Lu}[\p{L}\p{N}_'’\-]*(?: [\p{L}\p{N}_'’\-]+){0,2})[*_]*\s*(?:\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\)\s*:|:\s*\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\))[ \t]*/gmu,
       (m, ind, nm, s1, s2) => (findChar(X, nm) ? ind + nm + " piensa" + (s1 || s2 ? " (" + (s1 || s2) + ")" : "") + ": " : m));
     for (let i = 0, prev = null; i < 6 && prev !== body; i++) { prev = body; body = body.replace(THRE, onThink); }
     // también en mitad de un párrafo, entre «», "" o “”

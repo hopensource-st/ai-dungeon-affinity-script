@@ -50,6 +50,8 @@ Each tracked card gets a `<<LW ... LW>>` block in its Notes with its numbers and
 
 **Name the protagonist** with `protagonist: Name` in the Config card: the chronicle then always calls them by that name, whether the AI wrote "you", "the protagonist" or the name.
 
+**Writing style:** `style:` in the Config card is sent to the AI every turn. By default it asks for literary prose, with dialogue woven into the narration and never script lines like `Name: "..."`. Write your own text there, or `style: off` to send nothing.
+
 No character cards in the scenario? Create them as you play: `/npc Mira, the innkeeper who knows every rumor`. The AI's next reply becomes the card.
 
 Cards are never created on their own. When the AI keeps using a name that has no card (in `suggest_after: 3` different turns), the engine hints once, with the command and an example: `[LW: Vex keeps coming up but has no card... type /npc Vex, then who they are in a few words. Example: /npc Vex, a guard who owes you a favor...]`. Ignore it, or add the name to `skip:`. `suggest_cards: off` disables the hints.

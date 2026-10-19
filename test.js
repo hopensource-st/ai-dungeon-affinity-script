@@ -335,8 +335,11 @@ assert(colonFirst === "The steward leads you on." && /^t: Hero walks like they o
 // "Name: «...»" with no sign and no "thinks": still a thought
 const colonQuote = turn("I wait.", "Tobin: «Please, Hero, stay close to me.»\nThe hall is cold.");
 assert(colonQuote === "The hall is cold." && /^t: Please, Hero, stay close to me\.$/m.test(storyCards[1].description), "colon and quote: " + colonQuote);
-const colonPlain = turn("I wait.", "Tobin: \"The hall is too quiet tonight, I don't like it.\"\nWind howls.");
-assert(colonPlain === "Wind howls." && /^t: The hall is too quiet tonight, I don't like it\.$/m.test(storyCards[1].description), "colon and plain quotes: " + colonPlain);
+assert(/Style: literary prose; dialogue woven into the narration/.test(G.state.memory.frontMemory), "style sent: " + G.state.memory.frontMemory);
+// "Name: "..."" is dialogue in script format: it stays, names and all
+const script = "Mira: \"Guests are always honored here. Remove that veil.\"\nTobin: \"She's weary from the road.\"\n\nThe hall's silence deepens.";
+const colonPlain = turn("I bow.", script);
+assert(colonPlain === script, "script dialogue kept: " + colonPlain);
 // "(x)" copied from the instruction: stored as a thought with no sign
 const xs = turn("I wait.", "Mira thinks (x): The girl walks as if the palace might stop her, not the other way around.");
 assert(!/thinks/.test(xs) && /^t: The girl walks as if the palace might stop her, not the other way around\.$/m.test(storyCards[0].description), "(x): " + xs);

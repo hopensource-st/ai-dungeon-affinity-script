@@ -50,6 +50,8 @@ const LW = (() => {
       skip: "", autostats: false,
       // protagonist: the player character's name; the chronicle always calls them by it (empty: "the protagonist")
       protagonist: "",
+      // style: sent to the AI every turn (empty: nothing)
+      style: "Style: literary prose; dialogue woven into the narration with speech tags, never script lines like Name: \"...\".",
       // twists: after twist_gap quiet turns, each turn has twist_chance % of drawing one from the Events card deck
       twists: true, twist_gap: 8, twist_chance: 25, twist_hold: 3,
       // bonds: the first time two characters with no written tie share a scene, bond_chance % of drawing one from the Relations deck
@@ -663,6 +665,7 @@ const LW = (() => {
     if (W.pendLog.length) add(1, "Put {log: one past-tense sentence in the third person, naming " + (String(s.protagonist || "").trim() || "the protagonist") + ", summing up what just happened} alone on the first line of the reply.");
     add(1, tp ? thoughtInstr(X, tp, L).replace(/^Begin the reply with/, W.pendLog.length ? "After that line, write" : "Begin the reply with") : "");
     // the engine keeps the thoughts: the prose shows only what the protagonist can see and hear
+    add(1, typeof s.style === "string" ? s.style.trim() : "");     // "style: off" or empty: nothing
     if (s.thoughts && !W.off) add(0, "Never narrate what other characters think; show only what the protagonist sees and hears" + (tp ? ", apart from the thought lines asked above" : "") + ".");
     if (s.contact) {
       const names = L.allow.map((id) => X.byId[id] && X.byId[id].first).filter(Boolean);
@@ -2041,9 +2044,9 @@ const LW = (() => {
       if (!showTh) removed = true;
       return ind + [showTh ? words.slice(0, k).concat(shown).join(" ") : "", rest].filter(Boolean).join(" ");
     };
-    // "Octavia (-): ...", "Octavia: (-) ..." or "Octavia: «...»" leave out "thinks": a known name, a colon and a sign or a quote is a thought too
-    // ponytail: "Name: "..."" at the start of a sentence is script format, not prose dialogue
-    body = body.replace(/(^[ \t]*|(?<=[.!?…»"”)*_][ \t]+))[*_]*([A-Z][\w'’\-]*(?: [\w'’\-]+){0,2})[*_]*\s*(?:\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\)\s*:|:\s*\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\)|:(?=\s*[*_]*[«"“]))[ \t]*/gm,
+    // "Octavia (-): ...", "Octavia: (-) ..." or "Octavia: «...»" leave out "thinks": a known name, a colon and a sign or « is a thought too
+    // ("Octavia: "..."" is not: the AI writes dialogue that way too)
+    body = body.replace(/(^[ \t]*|(?<=[.!?…»"”)*_][ \t]+))[*_]*([A-Z][\w'’\-]*(?: [\w'’\-]+){0,2})[*_]*\s*(?:\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\)\s*:|:\s*\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\)|:(?=\s*[*_]*«))[ \t]*/gm,
       (m, ind, nm, s1, s2) => (findChar(X, nm) ? ind + nm + " thinks" + (s1 || s2 ? " (" + (s1 || s2) + ")" : "") + ": " : m));
     for (let i = 0, prev = null; i < 6 && prev !== body; i++) { prev = body; body = body.replace(THRE, onThink); }
     // mid-paragraph too, in «», "" or “” quotes

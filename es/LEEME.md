@@ -54,6 +54,8 @@ Cada tarjeta que sigue recibe un bloque `<<LW ... LW>>` en sus Notes con sus nú
 
 **Dale nombre al protagonista** con `nombre_protagonista: Nombre` en la tarjeta Config: la crónica lo llamará siempre así, escriba la IA "el protagonista" o el nombre.
 
+**Estilo de escritura:** `style:` en la tarjeta Config se le envía a la IA cada turno. Por defecto pide prosa literaria, con los diálogos dentro de la narración y nunca como líneas de guion (`Nombre: «...»`). Escribe ahí tu propio texto, o `style: off` para no enviar nada.
+
 ¿El escenario no tiene tarjetas de personaje? Créalas mientras juegas: `/pnj Mira, la posadera que conoce todos los rumores`. La siguiente respuesta de la IA se convierte en la tarjeta.
 
 Las tarjetas nunca se crean solas. Cuando la IA usa a menudo un nombre sin tarjeta (en `suggest_after: 3` turnos distintos), el motor te avisa una vez, con el comando y un ejemplo: `[LW: Vex sale a menudo pero no tiene tarjeta... escribe /pnj Vex y quién es en pocas palabras...]`. Puedes ignorarlo o añadir el nombre a `skip:`. Con `suggest_cards: off` no hay avisos.
