@@ -253,6 +253,13 @@ tr = trust();
 turn("I grab Mira's wrist and mock her.", "Mira pulls away.");
 assert(touches() === t0 + 3 && trust() <= tr, "a rough touch counts but raises nothing: " + tr + " -> " + trust());
 
+// two unquoted thoughts and the narration on one line: each thought ends where the next character starts, the narration stays
+const one = turn("I look at Mira and Tobin.", "Mira thinks (-): The cellar won't fill itself. That look says the protagonist will stay late again. Tobin thinks (-): She's already planning to keep you here. I don't like this. Mira considers you for a moment, her fingers drumming on the bar.");
+const tLast = (id) => storyCards.find((c) => c.id === id).description.split("\n").filter((l) => /^t: /.test(l)).pop();
+assert.strictEqual(tLast(1), "t: The cellar won't fill itself. That look says the protagonist will stay late again.");
+assert.strictEqual(tLast(2), "t: She's already planning to keep you here. I don't like this.");
+assert(/^Mira considers you for a moment, her fingers drumming on the bar\.$/.test(one.trim()), "narration kept: " + one);
+
 // memories: a chronicle entry that names a character stays in their Notes, and comes back once the chronicle has moved on
 turn("I wait.", "Mira sighs. {log: Mira forgave the protagonist for the broken mug.}");
 assert(/^m: \(Day \d+\) Mira forgave the protagonist for the broken mug\.$/m.test(storyCards[0].description), "memory in Mira's Notes:\n" + storyCards[0].description);

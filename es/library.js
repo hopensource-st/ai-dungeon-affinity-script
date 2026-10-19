@@ -1959,15 +1959,33 @@ const LW = (() => {
       if (found.length < Math.max(2, X.cfg.s.thoughts_max) && !found.some((f) => f.ch.id === ch.id)) found.push({ ch, text: tx, sg });
       return ch.first + " piensa: «" + tx + "»";
     };
-    body = body.replace(THRE, (m, ind, nm, sg, t) => {
+    // el pensamiento acaba en su comilla de cierre; sin comillas, en una frase que empieza por el nombre de un personaje
+    // o pasadas thoughts_words palabras. Lo que siga en la línea se queda en la historia (y puede traer el siguiente pensamiento)
+    // ponytail: una frase corta de narración sin comillas justo detrás se toma como parte del pensamiento
+    const splitThought = (raw) => {
+      const s = String(raw).trim();
+      if (/^[*_]*«/.test(s)) { const i = s.indexOf("»"); return i < 0 ? [s, ""] : [s.slice(0, i + 1), s.slice(i + 1).replace(/^[*_]*\s*/, "")]; }
+      const q = s.match(/^[*_]*(?:"([^"]*)"|“([^”]*)”)[*_]*\s*([\s\S]*)$/);
+      if (q) return [q[1] != null ? q[1] : q[2], q[3]];
+      const sents = s.replace(/^[*_]*["“]/, "").split(/(?<=[.!?…])\s+/);
+      let n = 0, k = 0;
+      for (; k < sents.length; k++) {
+        const w = sents[k].split(/\s+/).length, first = sents[k].replace(/^[*_¿¡—\s]+/, "").split(/[\s,]/)[0];
+        if (k && (n + w > X.cfg.s.thoughts_words || findChar(X, first))) break;
+        n += w;
+      }
+      return [sents.slice(0, k).join(" "), sents.slice(k).join(" ")];
+    };
+    const onThink = (m, ind, nm, sg, t) => {
       const ch = findChar(X, nm);
       if (!ch || !L.rel[ch.id]) return m;
-      const shown = grab(ch, t, sg);
+      const [tx, rest] = splitThought(t);
+      const shown = grab(ch, tx, sg);
       if (shown == null) return m;
-      if (showTh) return shown;
-      removed = true;
-      return "";
-    });
+      if (!showTh) removed = true;
+      return ind + [showTh ? shown : "", rest].filter(Boolean).join(" ");
+    };
+    for (let i = 0, prev = null; i < 6 && prev !== body; i++) { prev = body; body = body.replace(THRE, onThink); }
     // también en mitad de un párrafo, entre «», "" o “”
     body = body.replace(/(\p{Lu}[\p{L}\p{N}_'’\-]*(?: [\p{L}\p{N}_'’\-]+){0,2}) (?:piensa|thinks)(?: \(([+\-=])\))?: (?:«([^»\n]*)»|"([^"\n]*)"|“([^”\n]*)”)[ \t]*/gu, (m, nm, sg, q1, q2, q3) => {
       const q = q1 != null ? q1 : q2 != null ? q2 : q3;

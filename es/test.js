@@ -91,6 +91,13 @@ c0 = conf();
 turn("Le agarro la muñeca a Inés y me burlo de ella.", "Inés se aparta.");
 assert(roces() === r0 + 3 && conf() <= c0, "un roce brusco cuenta pero no sube nada: " + c0 + " -> " + conf());
 
+// dos pensamientos sin comillas y la narración en una línea: cada uno acaba donde empieza el siguiente personaje
+const una = turn("Miro a Inés y a José.", "Inés piensa (-): La bodega no se llena sola. Esa mirada dice que la protagonista se quedará hasta tarde. José piensa (-): Ya planea retenerte aquí. No me gusta. Inés te observa un momento, tamborileando en la barra.");
+const tUlt = (id) => notes(id).split("\n").filter((l) => /^t: /.test(l)).pop();
+assert.strictEqual(tUlt(1), "t: La bodega no se llena sola. Esa mirada dice que la protagonista se quedará hasta tarde.");
+assert.strictEqual(tUlt(2), "t: Ya planea retenerte aquí. No me gusta.");
+assert(/^Inés te observa un momento, tamborileando en la barra\.$/.test(una.trim()), "narración conservada: " + una);
+
 // recuerdos: una entrada de la crónica que nombra a Inés se queda en sus Notes y vuelve cuando la crónica ya ha avanzado
 turn("Espero.", "Inés suspira. {log: Inés perdonó a la protagonista por la jarra rota.}");
 assert(/^m: \(Día \d+\) Inés perdonó a la protagonista por la jarra rota\.$/m.test(notes(1)), "recuerdo en las Notes de Inés:\n" + notes(1));
@@ -103,7 +110,7 @@ G.info.actionCount++;
 run("input", "Miro a Inés.");
 const linea = G.state.lw.pending;
 G.state.memory.frontMemory = "[Nota de otro script]";
-const historia = G.history.slice(-30).map((h) => h.text).join("\n");
+const historia = G.history.slice(-80).map((h) => h.text).join("\n");
 const ctxIn = "INSTRUCCIONES\n" + historia + "\nMiro a Inés.";
 G.info.maxChars = ctxIn.length + 20;
 const ctxOut = run("context", ctxIn).text;

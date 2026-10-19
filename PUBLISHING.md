@@ -62,6 +62,7 @@ TIPS
 • Another script also writes Front Memory? The engine notices and sends its line another way. If characters still never think, add "inject: text" to LW Config.
 
 WHAT'S NEW IN 1.1.4
+• Thoughts written with no quotes no longer swallow the rest of the line: the next character's thought and the narration stay where they belong.
 • Memories: each character keeps the chronicle moments that name them in their Notes, and remembers them when they are back in the scene.
 
 WHAT'S NEW IN 1.1.3
