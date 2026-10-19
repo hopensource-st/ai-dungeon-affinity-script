@@ -50,7 +50,7 @@ assert(G.state.lw.rel["1"].s.afinidad > 1, "la sonrisa sube la afinidad");
 // comandos en castellano, con y sin tildes, también en modo Do
 assert(/Inés pensará algo/.test(cmd("/pensar Ines")), "/pensar sin tilde");
 turn("Le pregunto a Inés por José.", "Inés se encoge de hombros.");
-assert(/Empieza la respuesta con Inés piensa \(x\)/.test(fm()), "la IA recibe la orden de pensar: " + fm());
+assert(/Empieza la respuesta con Inés piensa \(=\)/.test(fm()), "la IA recibe la orden de pensar: " + fm());
 const th = turn("Espero.", "Inés piensa (+): «José debería disculparse primero.»\nInés calla.");
 assert(!/piensa/.test(th) && /^t: José debería disculparse primero\.$/m.test(notes(1)), "pensamiento guardado y quitado del texto:\n" + th + "\n" + notes(1));
 const inl = turn("Espero.", "Crepita el fuego. Inés piensa (=): \"Aquí nadie paga a tiempo.\" Limpia la barra.");
@@ -66,6 +66,16 @@ assert(G.state.lw.w.day === day0, "recuerdos y diálogos no mueven el reloj");
 assert(G.state.lw.rel["2"].s["obsesión"] >= 0.5, "[cfg obsesion:0.5] sin tilde hace yandere a José: " + JSON.stringify(G.state.lw.rel["2"].s));
 turn("Duermo.", "A la mañana siguiente, Inés abre los postigos.");
 assert(G.state.lw.w.day === day0 + 1 && /Día \d+, mañana/.test(fm() + cmd("/hora")), "salto a la mañana siguiente");
+// dormirse es de noche, despertar tras la noche es la mañana siguiente, y "esa tarde" al anochecer no salta un día
+const Wr = G.state.lw.w, hora = () => Wr.day + ":" + Wr.tod;   // tod: 0 amanecer, 1 mañana, 2 tarde, 3 anochecer, 4 noche
+Wr.tod = 3;
+const d1 = Wr.day;
+turn("Espero.", "Esa tarde había sido larga. Inés bosteza.");
+assert(hora() === d1 + ":3", "esa tarde, al anochecer, se queda: " + hora());
+turn("Me acuesto.", "Te quedas dormida entre las pieles.");
+assert(hora() === d1 + ":4", "dormirse -> noche: " + hora());
+turn("Me estiro.", "Te despiertas con olor a pan.");
+assert(hora() === (d1 + 1) + ":1", "despertar -> mañana siguiente: " + hora());
 
 // protagonista: la
 cfg.description += "\nprotagonista: la";

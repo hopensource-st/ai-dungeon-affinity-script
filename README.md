@@ -48,6 +48,8 @@ Each tracked card gets a `<<LW ... LW>>` block in its Notes with its numbers and
 
 **Skip the protagonist** (and anyone else) with `skip: Name, Name` in the Config card, or `[cfg skip]` in that card's Notes.
 
+**Name the protagonist** with `protagonist: Name` in the Config card: the chronicle then always calls them by that name, whether the AI wrote "you", "the protagonist" or the name.
+
 No character cards in the scenario? Create them as you play: `/npc Mira, the innkeeper who knows every rumor`. The AI's next reply becomes the card.
 
 Cards are never created on their own. When the AI keeps using a name that has no card (in `suggest_after: 3` different turns), the engine hints once, with the command and an example: `[LW: Vex keeps coming up but has no card... type /npc Vex, then who they are in a few words. Example: /npc Vex, a guard who owes you a favor...]`. Ignore it, or add the name to `skip:`. `suggest_cards: off` disables the hints.
@@ -92,7 +94,7 @@ The Config card lists every setting. The most useful:
 - **Thoughts:** up to `max_present: 4` characters are followed in a scene, and up to `thoughts_max: 2` of them think each turn, taking turns (each one every `thoughts_interval: 4` turns or when their feelings change stage). Each character's newest `thoughts_keep: 20` thoughts are kept as `t:` lines in the block in their Notes, after the stats; the AI gets the last `thoughts_recent: 3` of `thoughts_context: 2` of them. `thoughts_show: on` also shows them in the story.
 - **Memories:** every chronicle entry that names a character (`{log: ...}`, `/log`, `/canon`) is also kept in that character's Notes as an `m:` line with its day, the newest `memories_keep: 8`. While they are in the scene the AI gets their last `memories_recent: 2` (for up to `memories_context: 2` characters), so each character remembers what happened between you even when the chronicle has moved on. `memories_recent: 0` turns it off.
 - `clock: off`, `scene: off`, `clean: off` turn whole modules off.
-- **Clock:** a day and a moment of the day (`clock_times: dawn|morning|afternoon|evening|night`), sent to the AI as `Time: Day 2, evening.` It only moves when the narration or your own action says time passes: "the next morning", "3 days later", "I sleep until dawn", "the sun sets", "that night", "hours later"... Dialogue in quotes and memories ("I remember that night") never move it. `/time evening`, `/time +1` and `/day +2` set it by hand. To make it drift on its own, set `clock_turns: 12` (one step every 12 turns without a jump) or `clock_on_beat: on` (one step per arc beat).
+- **Clock:** a day and a moment of the day (`clock_times: dawn|morning|afternoon|evening|night`), sent to the AI as `Time: Day 2, evening.` It only moves when the narration or your own action says time passes: "the next morning", "3 days later", "I sleep until dawn", "the sun sets", "that night", "hours later"... Falling asleep or going to bed makes it night, and waking up after the evening or night is the next morning (a nap in the day changes nothing). "That afternoon" said in the evening talks about today, so it never skips a day; a jump that leaves the clock where it was does not close the scene. Dialogue in quotes and memories ("I remember that night") never move it. `/time evening`, `/time +1` and `/day +2` set it by hand. With no jump, it also moves one step every `clock_turns: 12` turns (`0` turns that off); `clock_on_beat: on` adds one step per arc beat.
 - **Touch:** a friendly touch between a character and the protagonist (yours, or the AI's) raises their `touch_stats: affinity|attraction|trust|obsession` by `touch_bonus: 0.3`, once per turn; a sentence with `mood_neg` words makes it rough, and then nothing rises. The count shows as `touched:` in their Notes.
 - `contact: on` enables the touch-consent module (characters may only touch the protagonist when the player writes it).
 - `early_actions: 40` nudges the AI to introduce characters who have not appeared yet during the first 40 actions.
@@ -105,7 +107,7 @@ Tension between two characters rises when a sentence naming both has `mood_neg` 
 
 ### Twists, events and arc
 
-On the first turn the engine also creates **LW Events**, a deck of generic twists (a secret, a betrayal, a confession, a stranger, a mishap...), and **LW Arc**, a three-act arc whose fixed beats happen in order while its bank beats are drawn at random each playthrough. Each act lasts at least `act_turns: 30` actions, even when its beats are done sooner, and beats are at least `beat_gap: 3` actions apart. After `twist_gap` quiet turns, each turn has a `twist_chance` % chance of drawing a twist that fits the scene: `who: low` picks a present character who dislikes the protagonist, `high` one who likes them, `any` anyone present, `absent` someone already met who is not here. The AI is told to hint at it first, then to make it happen, in its own way for this story. It is never shown to the player; the chronicle records it afterwards.
+On the first turn the engine also creates **LW Events**, a deck of generic twists (a secret, a betrayal, a confession, a stranger, a mishap...), and **LW Arc**, a three-act arc whose fixed beats happen in order while its bank beats are drawn at random each playthrough. The arc moves by closed scenes (`arc_pace: scenes`): a beat starts with a scene and counts as done when that scene closes (a time jump, `/scene`, or every `scene_len: 6` turns of a long one), `beat_gap_scenes: 1` quiet scenes come between beats, and each act lasts at least `act_scenes: 4` scenes, even when its beats are done sooner. `arc_pace: turns` goes back to counting actions (`beat_hold`, `beat_gap`, `act_turns`). The chronicle never takes a beat's, event's or twist's planned text as fact: the AI is asked to log what really happened. After `twist_gap` quiet turns, each turn has a `twist_chance` % chance of drawing a twist that fits the scene: `who: low` picks a present character who dislikes the protagonist, `high` one who likes them, `any` anyone present, `absent` someone already met who is not here. The AI is told to hint at it first, then to make it happen, in its own way for this story. It is never shown to the player; the chronicle records it afterwards.
 
 ```
 twist: secret | who: low | weight 2 | stages: {who} is hiding something >> {who}'s secret comes out
@@ -118,11 +120,13 @@ Events and arc beats can also be written by hand, in any card of type **Events**
 ```
 event: storm | random | when: day>=2, prob 10 | stages: Dark clouds gather >> The storm breaks | hold 3 | sets: stormed | log: A storm hit the village.
 
-arc: Main Story | mode hybrid | pick 2 | hold 4
+arc: Main Story | mode hybrid | pick 75% | hold 4
 act: 1 | Arrival | The protagonist is new here; let them meet people.
 beat: 1 | fixed | First Friend | when: any affinity>=4 | guide: Someone offers real friendship. | sets: befriended
 beat: 1 | bank | A Rival | when: met>=3 | guide: Someone resents the attention the protagonist gets.
 ```
+
+`pick` is how many bank beats each act draws: a number (`pick 2`), a share of that act's bank (`pick 75%`) or `pick all`. An act does not end until its drawn bank beats have happened too, unless one never fits: then the act moves on after twice `act_scenes`.
 
 Conditions (comma-separated): `action>=30`, `day>=3`, `time:evening`, `flag:x`, `!flag:x`, `fired:id`, `met:Name`, `present:Name`, `met>=3`, `Name.stat>=N`, `any stat>=N`, `prob 20`. The AI may also write `{flag:x}`, `{event:id}`, `{log:text}` or `{beat}`; the engine acts on them and removes them.
 

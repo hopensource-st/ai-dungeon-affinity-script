@@ -44,6 +44,8 @@ damp_words: veil|veiled|hood|hooded
 tension_stat: obsession
 tension_min: 5
 tension_rate: 1
+# the protagonist's name: the chronicle always calls them by it (remove the # and write the name)
+# protagonist: Name
 # early game: introduce the cast during the first 40 actions
 early_actions: 40
 chronicle_stats: obsession|attraction
@@ -160,12 +162,12 @@ twist: missing | stages: something personal of the protagonist's goes missing >>
 
 ## Arc card (Type: Arc)
 
-The three-act arc. Fixed beats are the spine of the plot and happen in order; around them, two bank beats per act are drawn at random each playthrough (`pick 2`), and each one still needs its condition, so how you play decides which can happen. Keep `mode hybrid`: `random` could skip a fixed beat whose flag the next one needs. Commands: `/arc`, `/arc next`, `/arc reroll`, `/arc mode`, `/arc act N`.
+The three-act arc. Fixed beats are the spine of the plot and happen in order; around them, three of every four bank beats in each act are drawn at random each playthrough (`pick 75%`; `pick all` uses every one), and each one still needs its condition, so how you play decides which can happen. Keep `mode hybrid`: `random` could skip a fixed beat whose flag the next one needs. Commands: `/arc`, `/arc next`, `/arc reroll`, `/arc mode`, `/arc act N`.
 
 ```
 Triggers: lw_arc
 Notes:
-arc: The Obsession Spiral | mode hybrid | pick 2 | hold 4
+arc: The Obsession Spiral | mode hybrid | pick 75% | hold 4
 act: 1 | The Veil | The curse is new and invasive. Keep the mood uneasy and intimate, and give each character a distinct first moment.
 act: 2 | The Spiral | The obsession deepens and the court begins to notice. Tension, jealousy, and doubt about what is real.
 act: 3 | The Choice | The curse comes to a head. The protagonist decides whom to trust and who may touch them.

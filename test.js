@@ -93,7 +93,18 @@ for (let i = 0; i < 40; i++) {
 const W = G.state.lw.w;
 assert(W.twUsed.length >= 1 && told >= 1, "a twist was drawn and injected");
 assert(W.fired.inciting_incident != null, "arc reached its first beat");
-assert(W.act === 1 || W.actAt >= 30, "act 2 waits for act_turns: " + W.actAt);
+assert(W.act === 1 || W.actAtS >= 4, "act 2 waits for act_scenes: " + W.actAtS);
+// pick all: the act draws its whole bank (and waits for it, up to twice act_scenes)
+const arcCard = storyCards.find((c) => c.type === "arc");
+const arc0 = arcCard.description;
+arcCard.description = arc0.replace(/\| pick [^|]+\|/, "| pick all |");
+run("input", "/arc reroll");
+const bankN = (arc0.match(new RegExp("^beat: " + W.act + " \\| bank ", "gm")) || []).length;
+assert(bankN > 0 && W.q[W.act].p.length === bankN, "pick all: " + W.q[W.act].p.length + " of " + bankN);
+arcCard.description = arc0;
+run("input", "/arc reroll");
+// by scenes: a beat starts with a scene and is done when that scene closes
+assert(!W.bt || W.bt.su === W.scu, "the current beat started with this scene: " + JSON.stringify(W.bt) + " " + W.scu);
 assert(/Mira/.test(run("input", "/twists").text) === false && /secret/.test(run("input", "/twists").text), "/twists lists the deck");
 
 // bonds: Mira and Tobin share a scene for the first time and get a tie from the deck; a quarrel raises their tension
@@ -135,8 +146,8 @@ const Wc = G.state.lw.w;
 const runTwist = (reply) => {
   Wc.tw = null; Wc.twEnd = -99;
   run("input", "/twist secret");
-  for (let i = 0; i < 12 && !Wc.pendLog.some(Boolean); i++) turn("I chat with Mira.", "Mira hums, beat " + i + ".");
-  assert(Wc.pendLog.some(Boolean), "twist ended");
+  for (let i = 0; i < 12 && Wc.tw; i++) turn("I chat with Mira.", "Mira hums, beat " + i + ".");
+  assert(!Wc.tw && Wc.pendLog.length, "twist ended");
   const out = turn("I chat with Mira.", reply);
   assert(/\{log: one past-tense sentence/.test(G.state.memory.frontMemory), "AI asked for a summary");
   return out;
@@ -146,7 +157,7 @@ assert(!/\{log/.test(shownLog), "marker removed from the story");
 assert(/\] Mira admitted she had been reading/.test(Wc.log.join("\n")), "AI summary in the chronicle");
 G.state.lw.w.twUsed = [];
 runTwist("Mira says nothing more.");
-assert(/\] (Mira|Tobin)'s secret comes out, and it changes things\.$/.test(Wc.log[Wc.log.length - 1]), "generic text when the AI forgets: " + Wc.log[Wc.log.length - 1]);
+assert(!Wc.log.some((l) => /secret comes out/.test(l)), "the planned text is never logged as if it happened: " + Wc.log[Wc.log.length - 1]);
 turn("I wait.", "Time passes for Mira.");
 assert(/Recently: \(Day \d+\) /.test(G.state.memory.frontMemory) && !/\[Day/.test(G.state.memory.frontMemory.slice(1)), "chronicle sent with clean dates");
 assert(!Wc.log.some((l) => / is now [^.]* of\.$/.test(l)), "threshold lines keep their full text");
@@ -173,7 +184,7 @@ for (const t of fresh) turn("I wait.", "Mira thinks (=): «" + t + "»\nMira wai
 const tLines = storyCards[0].description.split("\n").filter((l) => /^t: /.test(l));
 assert(tLines.length === 3 && /paint the sign blue/.test(tLines[2]), "thoughts capped, newest kept: " + tLines.join(" | "));
 turn("I ask Mira about her day.", "Mira shrugs.");
-assert(/Mira was just thinking: "[^"]*wine\." "[^"]*coins\." "[^"]*blue\."/.test(G.state.memory.frontMemory), "AI gets the last few: " + G.state.memory.frontMemory);
+assert(/Mira's private thoughts \(never narrate them\): "[^"]*wine\." "[^"]*coins\." "[^"]*blue\."/.test(G.state.memory.frontMemory), "AI gets the last few: " + G.state.memory.frontMemory);
 assert(G.state.lw.rel["1"].th.length === 3, "state keeps only the last few");
 const inl = turn("I wait.", "The fire crackles. Mira thinks (-): \"Nobody here ever pays on time.\" She wipes the bar.");
 assert(!/thinks/.test(inl) && /^t: Nobody here ever pays on time\.$/m.test(storyCards[0].description), "mid-paragraph thought in plain quotes: " + inl);
@@ -204,9 +215,19 @@ assert(at() === "day 6 tod 1", "dialogue and memories ignored -> " + at());
 turn("I wait.", "The sun sets over the harbor.");
 assert(at() === "day 6 tod 3", "the sun sets -> evening -> " + at());
 for (let i = 0; i < 15; i++) turn("I keep talking.", "Mira answers, point " + i + ".");
-assert(at() === "day 6 tod 3", "no drift from turns alone -> " + at());
+assert(at() === "day 6 tod 4", "clock_turns: one step after 12 turns with no jump -> " + at());
 turn("I go home.", "The next morning, the square is quiet.");
 assert(at() === "day 7 tod 1", "the next morning -> " + at());
+// sleep and waking, and "that afternoon" said in the evening (today, not tomorrow)
+Wk.tod = 3;
+turn("I wait.", "That afternoon had been long. Mira yawns.");
+assert(at() === "day 7 tod 3", "that afternoon, in the evening, stays -> " + at());
+turn("I lie in the bed.", "You drift toward sleep in the warm furs.");
+assert(at() === "day 7 tod 4", "falling asleep -> night -> " + at());
+turn("I stretch.", "You wake to the smell of bread.");
+assert(at() === "day 8 tod 1", "waking after the night -> next morning -> " + at());
+turn("I stretch.", "Mira wakes you from a short nap.");
+assert(at() === "day 8 tod 1", "a nap in the day changes nothing -> " + at());
 
 // scene summaries: a time jump closes the scene; next turn the AI is asked for {log: ...}; no generic line if it forgets
 const Ws = G.state.lw.w;
@@ -312,6 +333,28 @@ assert(noVerb === "The fire crackles." && /^t: Hero is so kind; I would do anyth
 const xs = turn("I wait.", "Mira thinks (x): The girl walks as if the palace might stop her, not the other way around.");
 assert(!/thinks/.test(xs) && /^t: The girl walks as if the palace might stop her, not the other way around\.$/m.test(storyCards[0].description), "(x): " + xs);
 
+// an unclosed « glued to the narration: the thought ends at its last first-person sentence, the narration stays
+const glued = turn("I wait.", "Tobin clears his throat. Mira thinks (x): «Tobin sings for my ears alone. Hero clings to him, but I am patient. And I am its queen.Tobin begins to sing. It is a low melody.");
+assert(glued === "Tobin clears his throat. Tobin begins to sing. It is a low melody." && /^t: Tobin sings for my ears alone\. Hero clings/m.test(storyCards[0].description), "glued: " + glued);
+// "log: ..." with no braces, in the second person: logged in the third, out of the story
+G.state.lw.w.pendLog = [""];
+const bareLog = turn("I wait.", "Mira yawns.\n\nlog: You have settled into the inn while Mira kept watch by your door.\n\nThe fire dies.");
+assert(bareLog === "Mira yawns.\n\nThe fire dies." && G.state.lw.w.log.some((l) => /The protagonist has settled into the inn while Mira kept watch by the protagonist's door\./.test(l)), "bare log: " + bareLog + " " + G.state.lw.w.log.slice(-1));
+// with protagonist: set, every entry calls them by name
+const cfgCard = storyCards.find((c) => c.type === "config");
+cfgCard.description += "\nprotagonist: Fiona";
+G.state.lw.w.pendLog = [""];
+turn("I wait.", "{log: You laughed while Mira poured the protagonist a drink.}\nMira laughs.");
+assert(/\] Fiona laughed while Mira poured Fiona a drink\.$/.test(G.state.lw.w.log.slice(-1)[0]), "named: " + G.state.lw.w.log.slice(-1));
+cfgCard.description = cfgCard.description.replace("\nprotagonist: Fiona", "");
+// "{log: just happened}" is not a summary: the generic line goes in instead
+G.state.lw.w.pendLog = ["Story beat: The Gift."];
+turn("I wait.", "{log: just happened}\nMira laughs.");
+assert(!G.state.lw.w.log.some((l) => /just happened/.test(l)) && /Story beat: The Gift\./.test(G.state.lw.w.log.slice(-1)[0]), "junk log: " + G.state.lw.w.log.slice(-1));
+// a thought in our format from someone the engine does not track: not stored, but out of the story
+const stranger = turn("I wait.", "The fire dies. Octavia thinks (x): «She does not understand what she is inviting.\nSilence.");
+assert(stranger === "The fire dies.\nSilence.", "stranger: " + stranger);
+
 // three characters think in one reply: all three are stored
 turn("I wait.", "Mira thinks (=): «The ale is running low.»\nTobin thinks (=): «The horses need water.»\nSelene thinks (=): «That book was overdue.»\nSilence.");
 assert(/^t: That book was overdue\.$/m.test(storyCards.find((c) => c.id === 201).description), "third thought stored");
@@ -319,7 +362,7 @@ assert(/^t: That book was overdue\.$/m.test(storyCards.find((c) => c.id === 201)
 // /think holds until the thought arrives: a reply that skips it does not cancel it
 run("input", "/think Mira");
 turn("I wait for Mira.", "Mira polishes a glass.");
-assert(G.state.lw.w.force.includes("1") && /Mira thinks \(x\)/.test(G.state.memory.frontMemory), "still asked after a reply with no thought: " + JSON.stringify(G.state.lw.w.force) + " " + G.state.memory.frontMemory);
+assert(G.state.lw.w.force.includes("1") && /Mira thinks \(=\)/.test(G.state.memory.frontMemory), "still asked after a reply with no thought: " + JSON.stringify(G.state.lw.w.force) + " " + G.state.memory.frontMemory);
 turn("I wait.", "Mira thinks (=): «The glasses never stay clean.»\nMira sighs.");
 assert(!G.state.lw.w.force.includes("1"), "done once the thought arrives");
 
@@ -331,7 +374,7 @@ assert(bare === "Mira laughs." && G.state.lw.w.log.some((l) => /comments on the 
 // a key of the AI's own, "{just happened: ...}", closed or not: its text is the log, the key is dropped
 G.state.lw.w.pendLog = [""]; G.state.lw.w.asked = true;
 const own = turn("I wait.", "{just happened: You declined the King's lavish offer in favor of modesty.}\nMira nods.");
-assert(own === "Mira nods." && G.state.lw.w.log.some((l) => /\] You declined the King's lavish offer in favor of modesty\.$/.test(l)), "own key: " + own);
+assert(own === "Mira nods." && G.state.lw.w.log.some((l) => /\] The protagonist declined the King's lavish offer in favor of modesty\.$/.test(l)), "own key: " + own);
 G.state.lw.w.pendLog = [""]; G.state.lw.w.asked = true;
 const own2 = turn("I wait.", "{just happened: Mira poured a second cup.\nMira smiles.");
 assert(own2 === "Mira smiles." && G.state.lw.w.log.some((l) => /\] Mira poured a second cup\.$/.test(l)), "own key, unclosed: " + own2);

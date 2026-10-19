@@ -52,6 +52,8 @@ Cada tarjeta que sigue recibe un bloque `<<LW ... LW>>` en sus Notes con sus nú
 
 **Deja fuera al protagonista** (o a quien quieras) con `skip: Nombre, Nombre` en la tarjeta Config, o con `[cfg skip]` en las Notes de su tarjeta.
 
+**Dale nombre al protagonista** con `nombre_protagonista: Nombre` en la tarjeta Config: la crónica lo llamará siempre así, escriba la IA "el protagonista" o el nombre.
+
 ¿El escenario no tiene tarjetas de personaje? Créalas mientras juegas: `/pnj Mira, la posadera que conoce todos los rumores`. La siguiente respuesta de la IA se convierte en la tarjeta.
 
 Las tarjetas nunca se crean solas. Cuando la IA usa a menudo un nombre sin tarjeta (en `suggest_after: 3` turnos distintos), el motor te avisa una vez, con el comando y un ejemplo: `[LW: Vex sale a menudo pero no tiene tarjeta... escribe /pnj Vex y quién es en pocas palabras...]`. Puedes ignorarlo o añadir el nombre a `skip:`. Con `suggest_cards: off` no hay avisos.
@@ -108,7 +110,7 @@ La tarjeta Config lista todos los ajustes. **Las palabras clave y los nombres de
 - **Pensamientos:** se sigue a un máximo de `max_present: 4` personajes por escena, y piensan como mucho `thoughts_max: 2` por turno, por turnos (cada uno cada `thoughts_interval: 4` turnos o cuando sus sentimientos cambian de etapa). La IA escribe `Mira piensa (+): «...»`, el motor lo guarda y lo quita de la historia. Los `thoughts_keep: 20` pensamientos más recientes de cada personaje se guardan como líneas `t:` en el bloque de sus Notes, debajo de los stats; la IA recibe los `thoughts_recent: 3` últimos de `thoughts_context: 2` de ellos. `thoughts_show: on` también los muestra en la historia.
 - **Recuerdos:** cada entrada de la crónica que nombra a un personaje (`{log: ...}`, `/log`, `/canon`) se guarda también en sus Notes como línea `m:` con su día, las `memories_keep: 8` más recientes. Mientras está en escena la IA recibe sus `memories_recent: 2` últimas (de hasta `memories_context: 2` personajes), así cada personaje recuerda lo que pasó entre vosotros aunque la crónica haya avanzado. `memories_recent: 0` lo apaga.
 - `clock: off`, `scene: off` y `clean: off` apagan módulos enteros.
-- **Reloj:** un día y un momento del día (`clock_times: amanecer|mañana|tarde|anochecer|noche`), que la IA recibe como `Momento: Día 2, anochecer.` Solo avanza cuando la narración o tu acción dicen que pasa el tiempo: «a la mañana siguiente», «tres días después», «duermo hasta el amanecer», «se pone el sol», «esa noche», «horas después»... Los diálogos entre comillas o rayas y los recuerdos («recuerdo aquella noche») no lo mueven. `/hora anochecer`, `/hora +1` y `/dia +2` lo cambian a mano. Para que avance solo, pon `clock_turns: 12` (un paso cada 12 turnos sin salto) o `clock_on_beat: on` (un paso por beat del arco).
+- **Reloj:** un día y un momento del día (`clock_times: amanecer|mañana|tarde|anochecer|noche`), que la IA recibe como `Momento: Día 2, anochecer.` Solo avanza cuando la narración o tu acción dicen que pasa el tiempo: «a la mañana siguiente», «tres días después», «duermo hasta el amanecer», «se pone el sol», «esa noche», «horas después»... Los diálogos entre comillas o rayas y los recuerdos («recuerdo aquella noche») no lo mueven. Dormirse o acostarse lo pone de noche, y despertar tras el anochecer o la noche es la mañana siguiente (una siesta de día no cambia nada). «Esa tarde» dicho al anochecer habla de hoy, así que nunca salta un día; un salto que deja el reloj igual no cierra la escena. `/hora anochecer`, `/hora +1` y `/dia +2` lo cambian a mano. Sin saltos, también avanza un paso cada `clock_turns: 12` turnos (`0` lo apaga); `clock_on_beat: on` suma un paso por beat del arco.
 - **Contacto:** un roce amistoso entre un personaje y el protagonista (tuyo o de la IA) sube sus `touch_stats: afinidad|atracción|confianza|obsesión` en `touch_bonus: 0.3`, una vez por turno; si la frase tiene palabras de `mood_neg` es brusco y no sube nada. La cuenta sale como `contactos:` en sus Notes.
 - `contact: on` activa el módulo de consentimiento del contacto: los personajes solo pueden tocar al protagonista cuando quien juega lo escribe («le abrazo», «le cojo la mano»...).
 - `early_actions: 40` empuja a la IA a presentar, durante las 40 primeras acciones, a los personajes que aún no han salido.
@@ -122,7 +124,7 @@ La tensión entre dos personajes sube cuando una frase que nombra a los dos tien
 
 ### Giros, eventos y arco
 
-En el primer turno el motor también crea **LW Eventos**, un mazo de giros genéricos (un secreto, una traición, una confesión, alguien desconocido, un percance...), y **LW Arco**, un arco en tres actos cuyos beats fixed ocurren en orden y cuyos beats bank se sortean en cada partida. Cada acto dura al menos `act_turns: 30` acciones aunque sus beats acaben antes, y entre beat y beat pasan al menos `beat_gap: 3` acciones. Tras `twist_gap` turnos tranquilos, cada turno tiene un `twist_chance` % de sacar un giro que encaje en la escena: `who: low` elige a alguien presente a quien le cae mal el protagonista, `high` a alguien a quien le cae bien, `any` a cualquiera presente y `absent` a alguien conocido que no está. Se le pide a la IA que primero lo insinúe y luego lo haga ocurrir, a su manera y en esta historia. Quien juega nunca lo ve anunciado; la crónica lo anota después.
+En el primer turno el motor también crea **LW Eventos**, un mazo de giros genéricos (un secreto, una traición, una confesión, alguien desconocido, un percance...), y **LW Arco**, un arco en tres actos cuyos beats fixed ocurren en orden y cuyos beats bank se sortean en cada partida. El arco avanza por escenas cerradas (`arc_pace: scenes`): un beat empieza con una escena y se da por hecho cuando esa escena se cierra (un salto de tiempo, `/escena` o cada `scene_len: 6` turnos si se alarga), entre beat y beat hay `beat_gap_scenes: 1` escenas tranquilas, y cada acto dura al menos `act_scenes: 4` escenas aunque sus beats acaben antes. Con `arc_pace: turns` vuelve a contar acciones (`beat_hold`, `beat_gap`, `act_turns`). La crónica nunca da por hecho el texto previsto de un beat, evento o giro: se le pide a la IA que anote lo que pasó de verdad. Tras `twist_gap` turnos tranquilos, cada turno tiene un `twist_chance` % de sacar un giro que encaje en la escena: `who: low` elige a alguien presente a quien le cae mal el protagonista, `high` a alguien a quien le cae bien, `any` a cualquiera presente y `absent` a alguien conocido que no está. Se le pide a la IA que primero lo insinúe y luego lo haga ocurrir, a su manera y en esta historia. Quien juega nunca lo ve anunciado; la crónica lo anota después.
 
 ```
 twist: secreto | who: low | weight 2 | stages: {who} oculta algo >> el secreto de {who} sale a la luz
@@ -135,11 +137,13 @@ Los eventos y los beats del arco también se pueden escribir a mano, en cualquie
 ```
 event: tormenta | random | when: day>=2, prob 10 | stages: Se acumulan nubes negras >> Estalla la tormenta | hold 3 | sets: tormenta | log: Una tormenta azotó el pueblo.
 
-arc: Historia Principal | mode hybrid | pick 2 | hold 4
+arc: Historia Principal | mode hybrid | pick 75% | hold 4
 act: 1 | Llegada | El protagonista acaba de llegar; deja que conozca a la gente.
 beat: 1 | fixed | Primer Amigo | when: any afinidad>=4 | guide: Alguien le ofrece una amistad de verdad. | sets: amistad
 beat: 1 | bank | Un Rival | when: met>=3 | guide: Alguien envidia la atención que recibe el protagonista.
 ```
+
+`pick` es cuántos beats bank saca cada acto: un número (`pick 2`), una parte del banco de ese acto (`pick 75%`) o `pick all`. Un acto no termina hasta que también han pasado sus beats bank sorteados, salvo que alguno nunca encaje: entonces el acto sigue tras el doble de `act_scenes`.
 
 Condiciones (separadas por comas): `action>=30`, `day>=3`, `time:anochecer`, `flag:x`, `!flag:x`, `fired:id`, `met:Nombre`, `present:Nombre`, `met>=3`, `Nombre.stat>=N`, `any stat>=N`, `prob 20`. El id de un beat es su título en minúsculas, sin tildes y con guiones bajos (`La Elección Difícil` → `fired:la_eleccion_dificil`). La IA también puede escribir `{flag:x}`, `{event:id}`, `{log:texto}` o `{beat}`; el motor actúa y los quita.
 

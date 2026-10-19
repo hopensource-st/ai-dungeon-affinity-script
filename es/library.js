@@ -53,6 +53,8 @@ const LW = (() => {
     s: {
       // protagonista: el o la (cambia "el protagonista" por "la protagonista" en todo lo que recibe la IA)
       protagonista: "el",
+      // nombre_protagonista: cómo se llama el personaje del jugador; la crónica siempre lo llama así (vacío: "el protagonista")
+      nombre_protagonista: "",
       max_present: 4, max_stats: 3, contact: false, warn_touch: false, inject: "frontMemory",
       accel_scenes: 40, early_actions: 0, damp_words: "", damp_factor: 0.5,
       tension_stat: "afinidad", tension_min: 6, tension_rate: 0.5, tension_max: 10, max_pairs: 3,
@@ -76,12 +78,15 @@ const LW = (() => {
       memories_keep: 8, memories_recent: 2, memories_context: 2,
       thoughts: true, thoughts_show: false, thoughts_interval: 4, thoughts_max: 2, thoughts_keep: 20, thoughts_words: 20, thoughts_context: 2, thoughts_recent: 3,
       chronicle_lines: 3, chronicle_every: 8, chronicle_max: 200, chronicle_stats: "afinidad|atracción|obsesión", chronicle_min: 4,
-      clock: true, clock_times: "amanecer|mañana|tarde|anochecer|noche", clock_day: 1, clock_time: "mañana", clock_turns: 0, clock_on_beat: false,
+      clock: true, clock_times: "amanecer|mañana|tarde|anochecer|noche", clock_day: 1, clock_time: "mañana", clock_turns: 12, clock_on_beat: false,
       scene: true, scene_len: 6,
       scene_setup: "Escena: planteamiento. Sitúa el lugar y lo que quiere cada personaje; deja que crezca la tensión.",
       scene_mid: "Escena: complicación. Algo sale mal, se dice o se descubre.",
       scene_end: "Escena: clímax. Llévala a su punto álgido y ciérrala con un gancho.",
       scene_over: "Escena: se alarga. Ciérrala con un cambio de hora o de lugar.",
+      // arc_pace: scenes (un momento empieza con una escena y se da por hecho al cerrarla; los actos duran act_scenes) o turns (beat_hold, beat_gap, act_turns)
+      // una escena se cierra con un salto de tiempo, con /escena o cada scene_len turnos si se alarga
+      arc_pace: "scenes", beat_gap_scenes: 1, act_scenes: 4,
       beat_hold: 4, beat_gap: 3, act_turns: 30, event_hold: 3, events_max: 2, arc_mode: "hybrid",
       inject_max: 1300, clean: true, clean_repeat: true, max_entry: 1000,
       npc_template: "Nombre Completo, papel u oficio, edad. Tres rasgos de carácter. [dos o tres frases: cómo ve al protagonista, qué quiere, un defecto]. Aspecto: [una frase sobre complexión, pelo, ojos y ropa].",
@@ -153,8 +158,8 @@ const LW = (() => {
     "bond: celestina | {a} no para de empujar a {b} a pasar más tiempo con el protagonista",
   ];
   const ARC = [
-    "# Arco de la historia: los beats fixed ocurren en orden; los bank se sortean en cada partida (pick 2 por acto). Ver el LEEME.",
-    "arc: Historia | mode hybrid | pick 2 | hold 4",
+    "# Arco de la historia: los beats fixed ocurren en orden; los bank se sortean en cada partida (pick 75%: tres de cada cuatro del banco de cada acto). Ver el LEEME.",
+    "arc: Historia | mode hybrid | pick 75% | hold 4",
     "act: 1 | Planteamiento | Presenta el mundo del protagonista y a la gente que lo rodea, y siembra una pregunta que la historia responderá.",
     "act: 2 | Confrontación | Las complicaciones se acumulan, las relaciones se ponen a prueba y lo que está en juego no deja de crecer.",
     "act: 3 | Desenlace | Lleva el conflicto central a su punto crítico y deja que las decisiones del protagonista tengan consecuencias.",
@@ -190,6 +195,7 @@ const LW = (() => {
     for (const k of Object.keys(DEF.stages)) l.push("stages: " + k + " | " + DEF.stages[k].map((e) => e[0] + "=" + e[1]).join(" | "));
     l.push("# ajustes (el LEEME explica cada uno; on = sí, off = no)");
     l.push("# protagonista: el o la, para que la IA hable del protagonista o de la protagonista");
+    l.push("# nombre_protagonista: el nombre del personaje del jugador, para que la crónica siempre lo llame así");
     l.push("# autostats: on deja que la IA diseñe los stats de esta historia en la primera acción y luego se apaga (/autostats lo repite)");
     for (const k of Object.keys(DEF.s)) l.push(k + ": " + (k === "autostats" ? "on" : onoff(DEF.s[k])));
     l.push("# limpiador: ban: frase | sustituto");
@@ -648,7 +654,7 @@ const LW = (() => {
       for (const id of ids) {
         const r = L.rel[id];
         if (n >= s.thoughts_context || !r || !r.th.length) continue;
-        add(5, X.byId[id].first + " estaba pensando: " + r.th.slice(-Math.max(1, s.thoughts_recent)).map((t) => "\"" + t.slice(0, 120) + "\"").join(" ") + ".");
+        add(5, "Pensamientos privados de " + X.byId[id].first + " (nunca los narres): " + r.th.slice(-Math.max(1, s.thoughts_recent)).map((t) => "\"" + t.slice(0, 120) + "\"").join(" ") + ".");
         n++;
       }
     }
@@ -672,8 +678,10 @@ const LW = (() => {
       if (quiet.length) add(5, "Pronto, dale a " + andList(quiet) + " un momento con el protagonista.");
     }
     // las dos quieren el principio de la respuesta: primero la línea del log, justo después los pensamientos
-    if (W.pendLog.length) add(1, "Pon {log: una frase en pasado que resuma lo que acaba de pasar} sola en la primera línea de la respuesta.");
+    if (W.pendLog.length) add(1, "Pon {log: una frase en pasado y en tercera persona, nombrando " + (String(s.nombre_protagonista || "").trim() ? "a " + String(s.nombre_protagonista).trim() : "al protagonista") + ", que resuma lo que acaba de pasar} sola en la primera línea de la respuesta.");
     add(1, tp ? thoughtInstr(X, tp, L).replace(/^Empieza la respuesta con/, W.pendLog.length ? "Tras esa línea, escribe" : "Empieza la respuesta con") : "");
+    // los pensamientos los guarda el motor: la prosa solo cuenta lo que el protagonista ve y oye
+    if (s.thoughts && !W.off) add(0, "No narres nunca lo que piensan los demás personajes; cuenta solo lo que el protagonista ve y oye" + (tp ? ", aparte de las líneas de pensamiento pedidas arriba" : "") + ".");
     if (s.contact) {
       const names = L.allow.map((id) => X.byId[id] && X.byId[id].first).filter(Boolean);
       if (names.length) add(0, "El protagonista permite que " + names.join(" y ") + " le toque solo en esta acción.");
@@ -951,7 +959,7 @@ const LW = (() => {
         for (const t of pos.slice(1)) {
           let k;
           if ((k = t.match(/^mode\s+(authored|hybrid|random)$/i))) A.mode = k[1].toLowerCase();
-          else if ((k = t.match(/^pick\s+(\d+)$/i))) A.pick = +k[1];
+          else if ((k = t.match(/^pick\s+(\d+%?|all)$/i))) A.pick = k[1].toLowerCase();
           else if ((k = t.match(/^hold\s+(\d+)$/i))) A.hold = +k[1];
           else if ((k = t.match(/^seed\s+(\d+)$/i))) A.seed = +k[1];
         }
@@ -997,7 +1005,13 @@ const LW = (() => {
       (m) => tod(/amanec|de\s+día/i.test(m[0]) ? "amanecer" : /anochec/i.test(m[0]) ? "anochecer" : "noche")],
     [/(?<!\p{L})(?:el\s+)?sol\s+(?:sale|salió|asoma|asomó|se\s+alza|se\s+alzó)(?!\p{L})/iu, () => tod("amanecer")],
     [/(?<!\p{L})(?:el\s+)?sol\s+(?:se\s+pone|se\s+puso|se\s+oculta|se\s+ocultó|cae|cayó)(?!\p{L})/iu, () => tod("anochecer")],
-    [/(?<!\p{L})(?:esa|aquella)\s+(noche|tarde|madrugada)(?!\p{L})|(?<!\p{L})(?:ese|aquel)\s+(anochecer|atardecer)(?!\p{L})/iu, (m) => tod(m[1] || m[2])],
+    // "esa noche" habla de hoy: nunca vuelve a un momento anterior (eso saltaría un día entero)
+    [/(?<!\p{L})(?:esa|aquella)\s+(noche|tarde|madrugada)(?!\p{L})|(?<!\p{L})(?:ese|aquel)\s+(anochecer|atardecer)(?!\p{L})/iu, (m) => Object.assign(tod(m[1] || m[2]), { same: true })],
+    // despertar tras la noche es la mañana siguiente; una siesta de día no cambia nada
+    [/(?<!\p{L})(?:(?:me|te|se|nos|os)\s+(?:despiert|despert)\p{L}*|despiertas|despiertan|despertó|despertaron|despertaste|al\s+despertar(?:me|te|se|nos)?|wakes?|woke)(?!\p{L})/iu, () => ({ wake: true, tod: "mañana" })],
+    // dormirse o acostarse: noche
+    [/(?<!\p{L})(?:(?:me|te|se|nos|os)\s+(?:qued\p{L}*\s+dormid\p{L}*|duerm\p{L}*|durm\p{L}*|dorm\p{L}*|acuest\p{L}*|acost\p{L}*)|(?:caes|cae|caigo|cayó|caíste|caí|caen|cayeron)\s+dormid\p{L}*|(?:vas|va|voy|fue|fuiste|fui|van|fueron|vamos)\s+a\s+(?:la\s+cama|dormir|acostar\p{L}*))(?!\p{L})/iu,
+      () => ({ tod: "noche", same: true })],
     [/(?<!\p{L})(?:una\s+hora|unas\s+horas|horas|un\s+rato|un\s+tiempo)\s+(?:después|más\s+tarde)(?!\p{L})|(?<!\p{L})al\s+cabo\s+de\s+un\s+rato(?!\p{L})|(?<!\p{L})más\s+tarde\s+ese\s+(?:mismo\s+)?día(?!\p{L})/iu, () => ({ step: 1 })],
   ];
   // solo la narración mueve el reloj: los diálogos, pensamientos y recuerdos ("recuerdo aquella noche") no
@@ -1012,9 +1026,15 @@ const LW = (() => {
   const applyJump = (X, W, j) => {
     const t = times(X).map((s) => s.toLowerCase());
     if (j.day) { W.day += j.day; const i = t.indexOf(j.tod); W.tod = i < 0 ? 0 : i; W.ct = 0; return; }
+    if (j.wake) {                          // solo desde los dos últimos momentos del día (anochecer, noche)
+      if (W.tod < t.length - 2) return;
+      const i = t.indexOf(j.tod);
+      W.day++; W.tod = i < 0 ? 0 : i; W.ct = 0; return;
+    }
     if (j.tod) {
       const i = t.indexOf(j.tod);
       if (i < 0) { advTod(X, W, 1); return; }
+      if (j.same && i <= W.tod) return;
       if (i < W.tod) W.day++;
       W.tod = i; W.ct = 0; return;
     }
@@ -1096,8 +1116,11 @@ const LW = (() => {
   };
   // noMem: las notas del propio motor (un stat que cruza una etapa) no son recuerdos
   const addLog = (X, W, text, noMem) => {
-    const t = String(text).replace(/\s+/g, " ").replace(/\]/g, ")").trim().slice(0, 220);
+    let t = String(text).replace(/\s+/g, " ").replace(/\]/g, ")").trim().slice(0, 220);
     if (!t) return;
+    const hero = String(X.cfg.s.nombre_protagonista || "").trim();
+    if (hero) t = t.replace(/\b([Dd])el protagonista\b/g, "$1e " + hero).replace(/\b([Aa])l protagonista\b/g, "$1 " + hero)
+      .replace(/\b(?:[Ee]l|[Ll]a) protagonista\b/g, hero);     // un solo nombre para el protagonista en todas las entradas
     const line = (X.cfg.s.clock ? "[" + dayLabel(X, W) + "] " : "") + t;
     W.log.push(line);
     W.add.push(line);
@@ -1177,7 +1200,7 @@ const LW = (() => {
     delete W.ev[e.id];
     W.fired[e.id] = cx.turn;
     for (const f of e.sets) W.flags[f] = 1;
-    if (e.log) addLog(X, W, e.log);
+    if (e.log) W.pendLog.push("");     // lo anota la IA, tal como pasó de verdad
   };
   const startEvent = (X, L, e, cx) => {
     if (L.w.fired[e.id] != null || L.w.ev[e.id]) return;
@@ -1208,7 +1231,8 @@ const LW = (() => {
     const R = rng(hashStr("q" + act + ":" + (A.seed || W.seed) + ":" + W.reroll));
     const shuf = (a) => { const x = a.slice(); for (let i = x.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); const t = x[i]; x[i] = x[j]; x[j] = t; } return x; };
     const fixed = all.filter((b) => b.kind !== "bank"), bank = all.filter((b) => b.kind === "bank");
-    const pick = Math.max(0, A.pick);
+    // pick: how many bank beats this act draws, a number, a share of the act's bank (75%) or all
+    const pick = A.pick === "all" ? bank.length : /%$/.test(A.pick) ? Math.round((bank.length * parseFloat(A.pick)) / 100) : Math.max(0, num(A.pick, 2));
     let f, p;
     if (mode === "authored") { f = fixed; p = bank; }
     else if (mode === "random") { f = []; p = shuf(all).slice(0, Math.min(all.length, fixed.length + pick)); }
@@ -1217,36 +1241,46 @@ const LW = (() => {
   };
   const fireBeat = (X, L, b, cx) => {
     const W = L.w;
-    W.fired[b.id] = cx.turn; W.bt = null; W.btEnd = cx.turn;
+    W.fired[b.id] = cx.turn; W.bt = null; W.btEnd = cx.turn; W.btEndS = W.scu || 0;
     for (const f of b.sets) W.flags[f] = 1;
-    if (b.log) addLog(X, W, b.log); else W.pendLog.push("Momento clave: " + b.title + ".");   // se le pide a la IA que escriba lo que pasó
+    // se le pide a la IA que anote lo que pasó de verdad: el texto del momento puede no haber llegado a la historia
+    W.pendLog.push("");
     if (X.cfg.s.clock && X.cfg.s.clock_on_beat) advTod(X, W, 1);
   };
   const actDone = (W, q) => q.f.every((id) => W.fired[id] != null) && ((q.mode === "random" || !q.f.length) ? q.p.every((id) => W.fired[id] != null) : true);
   const arcStep = (X, L, cx) => {
-    const A = X.arc, W = L.w;
+    const A = X.arc, W = L.w, s = X.cfg.s;
     if (!A.beats.length || W.arcDone) return;
     if (!W.q[W.act]) buildQueue(X, L, A, W.act);
+    // por escenas el reloj es la cuenta de escenas, guardada aparte de las marcas por turnos (una partida puede cambiar de modo)
+    const byScene = String(s.arc_pace || "scenes").toLowerCase() !== "turns";
+    const now = byScene ? W.scu || 0 : cx.turn;
+    const mk = byScene ? { at: "su", end: "btEndS", act: "actAtS" } : { at: "at", end: "btEnd", act: "actAt" };
     if (W.bt) {
       const b = beatById(A, W.bt.id);
+      if (W.bt[mk.at] == null) W.bt[mk.at] = now;
       if (!b) W.bt = null;
-      else if (cx.turn - W.bt.at >= (b.hold || A.hold)) fireBeat(X, L, b, cx);
+      else if (W.bt.at === -1000 || now - W.bt[mk.at] >= (byScene ? 1 : b.hold || A.hold)) fireBeat(X, L, b, cx);   // -1000: la IA escribió {beat}
     }
     const q = W.q[W.act];
-    // act_turns: un acto dura al menos esos turnos aunque sus momentos acaben antes (los momentos de banco y los giros llenan la espera)
-    if (!W.bt && actDone(W, q) && cx.turn - (W.actAt || 0) >= X.cfg.s.act_turns) {
+    // un acto dura al menos act_scenes escenas (act_turns turnos) aunque sus momentos acaben antes (los momentos de banco y los giros llenan la espera)
+    // the drawn bank beats get their turn too; one that never fits (prob, met>=2) holds the act at most twice as long
+    const minA = byScene ? s.act_scenes : s.act_turns, since = now - (W[mk.act] || 0);
+    const bankDone = q.p.every((id) => W.fired[id] != null) || since >= 2 * minA;
+    if (!W.bt && actDone(W, q) && bankDone && since >= minA) {
       if (W.act >= A.maxAct) { W.arcDone = true; addLog(X, W, "El arco de la historia llega a su fin."); return; }
-      W.act++; W.btEnd = cx.turn; W.actAt = cx.turn;
+      W.act++; W[mk.end] = now; W[mk.act] = now;
       buildQueue(X, L, A, W.act);
       const an = (A.acts[W.act] || {}).name;
       addLog(X, W, "Empieza el acto " + W.act + (an ? ": " + an : "") + ".");
       return;
     }
-    if (!W.bt && cx.turn - W.btEnd >= X.cfg.s.beat_gap) {
+    // por escenas un momento solo empieza con una escena nueva, así tiene toda la escena para ocurrir
+    if (!W.bt && (!byScene || cx.newScene) && now - (W[mk.end] != null ? W[mk.end] : -999) >= (byScene ? s.beat_gap_scenes : s.beat_gap)) {
       const ok = (id) => { const b = beatById(A, id); return !!b && W.fired[id] == null && condsOk(X, L, cx, b.when, id); };
       const fid = q.f.find((id) => W.fired[id] == null);
       const pick = fid && ok(fid) ? fid : q.p.find(ok) || null;
-      if (pick) W.bt = { id: pick, at: cx.turn };
+      if (pick) W.bt = { id: pick, at: cx.turn, su: W.scu || 0 };
     }
   };
 
@@ -1297,9 +1331,7 @@ const LW = (() => {
       W.tw.st++; W.tw.at = cx.turn;
       if (W.tw.st <= t.stages.length) return;
       for (const f of t.sets) W.flags[f] = 1;
-      const done = twistFill(t.log || t.stages[t.stages.length - 1], W.tw.who);
-      const line = done.charAt(0).toUpperCase() + done.slice(1) + ".";
-      if (t.log) addLog(X, W, line); else W.pendLog.push(line);
+      W.pendLog.push("");     // lo anota la IA, tal como pasó de verdad (el texto previsto puede no haber pasado)
       W.tw = null; W.twEnd = cx.turn;
       return;
     }
@@ -1343,9 +1375,9 @@ const LW = (() => {
     const names = tp.instr.map((ch) => ch.first);
     const tones = tp.instr.filter((ch) => ch.cfg.vals.tone).map((ch) => ch.first + " " + String(ch.cfg.vals.tone).replace(/_/g, " "));
     const mood = X.cfg.s.mood;
-    return "Empieza la respuesta con " + names.map((n) => n + (mood ? " piensa (x): «...»" : " piensa: «...»")).join(" ") +
+    return "Empieza la respuesta con " + names.map((n) => n + (mood ? " piensa (=): «...»" : " piensa: «...»")).join(" ") +
       ": una frase nueva en primera persona cada uno, en castellano, de menos de " + X.cfg.s.thoughts_words + " palabras, nombrando a las personas, no con pronombres" +
-      (mood ? "; cambia la x por + si se siente más cerca del protagonista, - si más lejos, = si igual" : "") +
+      (mood ? "; entre paréntesis pon + si se siente más cerca del protagonista, - si más lejos, = si igual" : "") +
       (tones.length ? "; tono: " + tones.join(", ") : "") + ". Después sigue con la historia.";
   };
 
@@ -1725,7 +1757,7 @@ const LW = (() => {
       if (sub === "act") {
         const n = parseInt(val, 10);
         if (!(n >= 1 && n <= A.maxAct)) return { note: "Usa /arco acto 1 a " + A.maxAct + "." };
-        W.act = n; W.bt = null; W.arcDone = false; W.btEnd = turn; W.actAt = turn; buildQueue(X, L, A, n);
+        W.act = n; W.bt = null; W.arcDone = false; W.btEnd = turn; W.actAt = turn; W.btEndS = W.actAtS = W.scu || 0; buildQueue(X, L, A, n);
         return { note: "Pasamos al acto " + n + ". " + arcStatus(X, L) };
       }
       if (sub === "next") {
@@ -1939,10 +1971,18 @@ const LW = (() => {
 
     let body = text, logged = false;
     // markers the AI may write: {flag:x} {event:x} {beat} {log:text}
+    // un log de la IA: una frase de verdad ("{log: acaba de pasar}" no lo es)
+    // ponytail: la segunda persona ("Bajaste del carruaje") no se corrige aquí, se pide la tercera en la instrucción
+    const aiLog = (v) => {
+      const t = String(v).trim();
+      if (t.split(/\s+/).length < 4) return false;
+      addLog(X, W, t);
+      return true;
+    };
     const onMark = (m, k, v) => {
       const kind = k.toLowerCase(), val = String(v || "").trim();
       if (kind === "flag" && val) W.flags[slug(val)] = 1;
-      else if (kind === "log" && val) { addLog(X, W, val); logged = true; }
+      else if (kind === "log" && val) logged = aiLog(val) || logged;
       else if (kind === "event") { const e = X.ev.find((x) => x.id === slug(val)); if (e) startEvent(X, L, e, { turn }); }
       else if (kind === "beat" && W.bt) W.bt.at = -1000;
       return "";
@@ -1950,16 +1990,17 @@ const LW = (() => {
     // a veces la IA olvida la llave de cierre: entonces la marca llega hasta el final de su línea
     body = body.replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}]*))?\}/gi, onMark)
       .replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}\n]*))?$/gim, onMark)
-      .replace(/[ \t]{2,}/g, " ").replace(/\s+$/, "");
+      .replace(/^[ \t]*[*_]*log[ \t]*:[ \t]*([^\n]*\S)[ \t]*(?:\n|$)/gim, (m, v) => onMark(m, "log", v))   // "log: ..." sin llaves
+      .replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").replace(/\s+$/, "");
     // cualquier otra llave, "{La protagonista se ríe}" o "{acaba de pasar: ...}" (una clave inventada, de hasta 3 palabras, se quita):
     // es el log si se había pedido uno, y sale de la historia igualmente (las llaves nunca son parte de la prosa)
     body = body.replace(/\{([^{}\n]{3,})(?:\}[ \t]*|$)/gm, (m, v) => {
       const t = v.replace(/^\s*[^:\s][^:]{0,30}?:\s*(?=\S)/, (k) => (k.trim().split(/\s+/).length <= 3 ? "" : k)).trim();
-      if (t && W.pendLog.length && !logged) { addLog(X, W, t); logged = true; }
+      if (t && W.pendLog.length && !logged) logged = aiLog(t);
       return "";
     });
     if (/^\s*\{/.test(text)) body = text.match(/^\s*/)[0] + body.replace(/^\s+/, "");   // una marca en la primera línea
-    // a twist or beat that ended last turn: the AI was asked for a {log:...}; without one, the generic text goes in
+    // a twist, beat or scene that ended last turn: the AI was asked for a {log:...}; without one, nothing is written
     // ponytail: a Continue skips the Input hook, so nothing was asked: the request waits for the next action
     if (W.pendLog.length && (logged || W.asked)) { if (!logged) W.pendLog.forEach((l) => addLog(X, W, l, true)); W.pendLog = []; }   // las líneas genéricas no son recuerdos
     W.asked = false;
@@ -1985,9 +2026,19 @@ const LW = (() => {
     // el pensamiento acaba en su comilla de cierre; sin comillas, en una frase que empieza por el nombre de un personaje
     // o pasadas thoughts_words palabras. Lo que siga en la línea se queda en la historia (y puede traer el siguiente pensamiento)
     // ponytail: una frase corta de narración sin comillas justo detrás se toma como parte del pensamiento
+    // un « sin cerrar: el pensamiento llega hasta su última frase en primera persona (antes de cualquier diálogo); la narración de detrás se queda
+    const FIRSTP = /(?<!\p{L})(?:yo|me|mi|mis|mí|conmigo|nos|nuestr\p{L}*|nosotr\p{L}*|I|me|my|we|our)(?!\p{L})/iu;
     const splitThought = (raw) => {
-      const s = String(raw).trim();
-      if (/^[*_]*«/.test(s)) { const i = s.indexOf("»"); return i < 0 ? [s, ""] : [s.slice(0, i + 1), s.slice(i + 1).replace(/^[*_]*\s*/, "")]; }
+      let s = String(raw).trim();
+      if (/^[*_]*«/.test(s)) {
+        const i = s.indexOf("»");
+        if (i >= 0) return [s.slice(0, i + 1), s.slice(i + 1).replace(/^[*_]*\s*/, "")];
+        const sents = s.replace(/([.!?…])(?=[¿¡—]?\p{Lu})/gu, "$1 ").split(/(?<=[.!?…])\s+/);
+        let k = 0;
+        for (let j = 0; j < sents.length && !/["“—]/.test(sents[j]); j++) if (FIRSTP.test(sents[j])) k = j + 1;
+        if (k) return [sents.slice(0, k).join(" "), sents.slice(k).join(" ")];
+        s = s.replace(/^[*_]*«/, "");
+      }
       const q = s.match(/^[*_]*(?:"([^"]*)"|“([^”]*)”)[*_]*\s*([\s\S]*)$/);
       if (q) return [q[1] != null ? q[1] : q[2], q[3]];
       const sents = s.replace(/^[*_]*["“]/, "").split(/(?<=[.!?…])\s+/);
@@ -2004,11 +2055,16 @@ const LW = (() => {
       const words = nm.split(" ");
       let k = 0, ch = null;
       for (; k < words.length; k++) { ch = findChar(X, words.slice(k).join(" ")); if (ch && L.rel[ch.id]) break; }
-      if (k === words.length) return m;
+      if (k === words.length) {
+        // nuestro propio formato ("(x)" o «) de alguien sin relaciones: no se guarda, pero sale de la historia igualmente
+        if (showTh || (sg == null && !/^[*_]*«/.test(String(t).trim()))) return m;
+        removed = true;
+        return ind + [words.slice(0, -1).join(" "), splitThought(t)[1]].filter(Boolean).join(" ");
+      }
       const [tx, rest] = splitThought(t);
       // ponytail: un "pensamiento" sin comillas que nombra a quien piensa y no tiene nada en primera persona (yo, me, mi, nos...)
       // es narración con etiqueta: la etiqueta se va, el texto se queda y no se guarda nada
-      if (!/^[*_]*[«"“]/.test(String(t).trim()) && lastPos(ch, tx) >= 0 && !/(?<!\p{L})(?:yo|me|mi|mis|mí|conmigo|nos|nuestr\p{L}*|nosotr\p{L}*|I|me|my|we|our)(?!\p{L})/iu.test(tx)) return ind + [tx, rest].filter(Boolean).join(" ");
+      if (!/^[*_]*[«"“]/.test(String(t).trim()) && lastPos(ch, tx) >= 0 && !FIRSTP.test(tx)) return ind + [tx, rest].filter(Boolean).join(" ");
       const shown = grab(ch, tx, sg);
       if (shown == null) return m;
       if (!showTh) removed = true;
@@ -2031,7 +2087,9 @@ const LW = (() => {
           return words.slice(0, k).join(" ") + (k ? " " : "");
         }
       }
-      return m;
+      if (showTh) return m;
+      removed = true;
+      return words.slice(0, -1).join(" ") + (words.length > 1 ? " " : "");
     });
     // una etiqueta de pensamiento deformada y sin pensamiento, como "(Inés: =)" o "(Inés piensa: +)": sale de la historia
     body = body.replace(/\(\s*(\p{Lu}[\p{L}\p{N}_'’\-]*(?: [\p{L}\p{N}_'’\-]+){0,2})(?:\s+(?:piensa|thinks))?\s*:?\s*(?:[+\-−=]\s*[\d.]*|\d[\d.]*)\s*\)[ \t]*/gu, (m, nm) => {
@@ -2052,7 +2110,7 @@ const LW = (() => {
     }
     W.auto = [];
     W.force = W.force.filter((id) => !found.some((f) => f.ch.id === id));   // /pensar se mantiene hasta que llega el pensamiento (la IA puede saltárselo)
-    if (removed) body = body.replace(/^\s+/, "").replace(/\n{3,}/g, "\n\n");
+    if (removed) body = body.replace(/^\s+/, "").replace(/[ \t]+$/gm, "").replace(/\n{3,}/g, "\n\n");
 
     const ids = presentIds(X, body, 12);
     for (const f of found) if (!ids.includes(f.ch.id)) ids.push(f.ch.id);     // whoever thought was in the scene
@@ -2115,17 +2173,23 @@ const LW = (() => {
 
     // scenes and clock
     const jump = detectJump(act + "\n" + body);           // tu acción también cuenta ("duermo hasta el amanecer")
-    if (jump) { W.sc = { n: W.sc.n + 1, t: 0 }; if (ts.clock) applyJump(X, W, jump); }
+    // un salto que deja el reloj igual ("esa noche" cuando ya es de noche) no abre escena
+    const was = W.day + ":" + W.tod;
+    if (jump && ts.clock) applyJump(X, W, jump);
+    const moved = !!jump && (!ts.clock || was !== W.day + ":" + W.tod);
+    if (moved) W.sc = { n: W.sc.n + 1, t: 0 };
     else {
       W.sc.t++;
       if (ts.clock) { W.ct++; if (ts.clock_turns > 0 && W.ct >= ts.clock_turns) advTod(X, W, 1); }
     }
     // scene summaries: when a scene closes, or every chronicle_every turns of a long one, the AI logs what happened
     // (an empty fallback: nothing generic is written if it forgets)
-    if (ts.chronicle_every > 0 && (jump || W.sc.t % ts.chronicle_every === 0)) W.pendLog.push("");
+    if (ts.chronicle_every > 0 && (moved || W.sc.t % ts.chronicle_every === 0)) W.pendLog.push("");
 
-    // events and the arc
-    const cx = { turn, present: ids, bad: 0 };
+    // eventos y arco; W.scu cuenta las escenas cerradas (una escena larga se cierra cada scene_len turnos, como en los stats)
+    const unit = W.sc.n + ":" + Math.floor(W.sc.t / Math.max(3, num(ts.scene_len, 6))), newScene = W.scuK !== unit;
+    if (newScene) { W.scuK = unit; W.scu = (W.scu || 0) + 1; }
+    const cx = { turn, present: ids, bad: 0, newScene };
     eventStep(X, L, cx);
     arcStep(X, L, cx);
     twistStep(X, L, cx);

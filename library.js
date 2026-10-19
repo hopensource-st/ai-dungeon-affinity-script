@@ -48,6 +48,8 @@ const LW = (() => {
       accel_scenes: 40, early_actions: 0, damp_words: "", damp_factor: 0.5,
       tension_stat: "affinity", tension_min: 6, tension_rate: 0.5, tension_max: 10, max_pairs: 3,
       skip: "", autostats: false,
+      // protagonist: the player character's name; the chronicle always calls them by it (empty: "the protagonist")
+      protagonist: "",
       // twists: after twist_gap quiet turns, each turn has twist_chance % of drawing one from the Events card deck
       twists: true, twist_gap: 8, twist_chance: 25, twist_hold: 3,
       // bonds: the first time two characters with no written tie share a scene, bond_chance % of drawing one from the Relations deck
@@ -67,12 +69,15 @@ const LW = (() => {
       memories_keep: 8, memories_recent: 2, memories_context: 2,
       thoughts: true, thoughts_show: false, thoughts_interval: 4, thoughts_max: 2, thoughts_keep: 20, thoughts_words: 20, thoughts_context: 2, thoughts_recent: 3,
       chronicle_lines: 3, chronicle_every: 8, chronicle_max: 200, chronicle_stats: "affinity|attraction|obsession", chronicle_min: 4,
-      clock: true, clock_times: "dawn|morning|afternoon|evening|night", clock_day: 1, clock_time: "morning", clock_turns: 0, clock_on_beat: false,
+      clock: true, clock_times: "dawn|morning|afternoon|evening|night", clock_day: 1, clock_time: "morning", clock_turns: 12, clock_on_beat: false,
       scene: true, scene_len: 6,
       scene_setup: "Scene: setup. Establish the place and what each character wants; let tension build.",
       scene_mid: "Scene: complication. Something goes wrong, is said, or is revealed.",
       scene_end: "Scene: climax. Bring it to a peak, then settle on a hook.",
       scene_over: "Scene: running long. Close it with a change of time or place.",
+      // arc_pace: scenes (a beat starts with a scene and is done when it closes; acts last act_scenes) or turns (beat_hold, beat_gap, act_turns)
+      // a scene closes on a time jump, on /scene, or every scene_len turns of a long one
+      arc_pace: "scenes", beat_gap_scenes: 1, act_scenes: 4,
       beat_hold: 4, beat_gap: 3, act_turns: 30, event_hold: 3, events_max: 2, arc_mode: "hybrid",
       inject_max: 1300, clean: true, clean_repeat: true, max_entry: 1000,
       npc_template: "Full Name, role or occupation, age. Three personality traits. [two or three sentences: how they see the protagonist, what they want, one flaw]. Appearance: [one sentence on build, hair, eyes and clothes].",
@@ -144,8 +149,8 @@ const LW = (() => {
     "bond: matchmaker | {a} keeps nudging {b} to spend more time with the protagonist",
   ];
   const ARC = [
-    "# Story arc: fixed beats happen in order; bank beats are drawn at random each playthrough (pick 2 per act). See the README.",
-    "arc: Story | mode hybrid | pick 2 | hold 4",
+    "# Story arc: fixed beats happen in order; bank beats are drawn at random each playthrough (pick 75%: three of every four in each act's bank). See the README.",
+    "arc: Story | mode hybrid | pick 75% | hold 4",
     "act: 1 | Setup | Establish the protagonist's world and the people in it, and plant a question the story will answer.",
     "act: 2 | Confrontation | Complications pile up, relationships are tested, and the stakes keep rising.",
     "act: 3 | Resolution | Bring the central conflict to a head and let the protagonist's choices have consequences.",
@@ -179,6 +184,7 @@ const LW = (() => {
     l.push("# stages: stat | threshold=text the AI receives | ...   (empty text = nothing is sent)");
     for (const k of Object.keys(DEF.stages)) l.push("stages: " + k + " | " + DEF.stages[k].map((e) => e[0] + "=" + e[1]).join(" | "));
     l.push("# settings (see the README for what each one does)");
+    l.push("# protagonist: the player character's name, so the chronicle always calls them by it");
     l.push("# autostats: on lets the AI design this story's stats on the first action, then turns itself off (/autostats redoes it)");
     for (const k of Object.keys(DEF.s)) l.push(k + ": " + (k === "autostats" ? "on" : onoff(DEF.s[k])));
     l.push("# cleaner: ban: phrase | replacement");
@@ -630,7 +636,7 @@ const LW = (() => {
       for (const id of ids) {
         const r = L.rel[id];
         if (n >= s.thoughts_context || !r || !r.th.length) continue;
-        add(5, X.byId[id].first + " was just thinking: " + r.th.slice(-Math.max(1, s.thoughts_recent)).map((t) => "\"" + t.slice(0, 120) + "\"").join(" ") + ".");
+        add(5, X.byId[id].first + "'s private thoughts (never narrate them): " + r.th.slice(-Math.max(1, s.thoughts_recent)).map((t) => "\"" + t.slice(0, 120) + "\"").join(" ") + ".");
         n++;
       }
     }
@@ -654,8 +660,10 @@ const LW = (() => {
       if (quiet.length) add(5, "Soon give " + andList(quiet) + " a moment with the protagonist.");
     }
     // both want the top of the reply: the log line first, the thoughts right after it
-    if (W.pendLog.length) add(1, "Put {log: one past-tense sentence summing up what just happened} alone on the first line of the reply.");
+    if (W.pendLog.length) add(1, "Put {log: one past-tense sentence in the third person, naming " + (String(s.protagonist || "").trim() || "the protagonist") + ", summing up what just happened} alone on the first line of the reply.");
     add(1, tp ? thoughtInstr(X, tp, L).replace(/^Begin the reply with/, W.pendLog.length ? "After that line, write" : "Begin the reply with") : "");
+    // the engine keeps the thoughts: the prose shows only what the protagonist can see and hear
+    if (s.thoughts && !W.off) add(0, "Never narrate what other characters think; show only what the protagonist sees and hears" + (tp ? ", apart from the thought lines asked above" : "") + ".");
     if (s.contact) {
       const names = L.allow.map((id) => X.byId[id] && X.byId[id].first).filter(Boolean);
       if (names.length) add(0, "The protagonist permits " + names.join(" and ") + " to touch them in this action only.");
@@ -926,7 +934,7 @@ const LW = (() => {
         for (const t of pos.slice(1)) {
           let k;
           if ((k = t.match(/^mode\s+(authored|hybrid|random)$/i))) A.mode = k[1].toLowerCase();
-          else if ((k = t.match(/^pick\s+(\d+)$/i))) A.pick = +k[1];
+          else if ((k = t.match(/^pick\s+(\d+%?|all)$/i))) A.pick = k[1].toLowerCase();
           else if ((k = t.match(/^hold\s+(\d+)$/i))) A.hold = +k[1];
           else if ((k = t.match(/^seed\s+(\d+)$/i))) A.seed = +k[1];
         }
@@ -969,7 +977,13 @@ const LW = (() => {
     [/\b(dawn|morning|evening|night|dusk)\s+(?:broke|breaks|came|comes|fell|falls|arrived|arrives)\b/i, (m) => tod(m[1])],
     [/\bthe\s+sun\s+(?:rises|rose|comes\s+up|came\s+up)\b/i, () => tod("dawn")],
     [/\bthe\s+sun\s+(?:sets|set|sank|sinks|goes\s+down|went\s+down)\b/i, () => tod("evening")],
-    [/\b(?:late\s+|later\s+)?that\s+(night|evening|afternoon)\b/i, (m) => tod(m[1])],
+    // "that night" talks about today: never back to an earlier moment (that would skip a whole day)
+    [/\b(?:late\s+|later\s+)?that\s+(night|evening|afternoon)\b/i, (m) => Object.assign(tod(m[1]), { same: true })],
+    // waking up after the night is the next morning; a nap in the day changes nothing
+    [/\b(?:wake|wakes|woke|woken|waking|awoke|awaken|awakens|awakened)\b(?!\s+(?:up\s+)?to\s+the\s+(?:fact|truth|reality))/i, () => ({ wake: true, tod: "morning" })],
+    // falling asleep or going to bed: night
+    [/\b(?:fall|falls|fell|falling)\s+asleep\b|\b(?:drift|drifts|drifted|drifting|sink|sinks|sank|sinking|slip|slips|slipped|slipping)\s+(?:off\s+)?(?:in)?to(?:ward|wards)?\s+(?:a\s+\w+\s+)?sleep\b|\bdrift(?:s|ed|ing)?\s+off\b|\b(?:go|goes|went|going|head|heads|headed)\s+(?:off\s+)?to\s+(?:bed|sleep)\b/i,
+      () => ({ tod: "night", same: true })],
     [/\b(?:an?\s+hour|hours|some\s+time|a\s+while)\s+later\b|\blater\s+that\s+day\b/i, () => ({ step: 1 })],
   ];
   // only narration moves the clock: dialogue, thoughts and memories ("I remember that night") do not
@@ -983,9 +997,15 @@ const LW = (() => {
   const applyJump = (X, W, j) => {
     const t = times(X).map((s) => s.toLowerCase());
     if (j.day) { W.day += j.day; const i = t.indexOf(j.tod); W.tod = i < 0 ? 0 : i; W.ct = 0; return; }
+    if (j.wake) {                          // only from the last two moments of the day (evening, night)
+      if (W.tod < t.length - 2) return;
+      const i = t.indexOf(j.tod);
+      W.day++; W.tod = i < 0 ? 0 : i; W.ct = 0; return;
+    }
     if (j.tod) {
       const i = t.indexOf(j.tod);
       if (i < 0) { advTod(X, W, 1); return; }
+      if (j.same && i <= W.tod) return;
       if (i < W.tod) W.day++;
       W.tod = i; W.ct = 0; return;
     }
@@ -1067,8 +1087,10 @@ const LW = (() => {
   };
   // noMem: the engine's own notes (a stat crossing a stage) are not memories
   const addLog = (X, W, text, noMem) => {
-    const t = String(text).replace(/\s+/g, " ").replace(/\]/g, ")").trim().slice(0, 220);
+    let t = String(text).replace(/\s+/g, " ").replace(/\]/g, ")").trim().slice(0, 220);
     if (!t) return;
+    const hero = String(X.cfg.s.protagonist || "").trim();
+    if (hero) t = t.replace(/\b[Tt]he protagonist\b/g, hero);     // one name for the protagonist in every entry
     const line = (X.cfg.s.clock ? "[" + dayLabel(X, W) + "] " : "") + t;
     W.log.push(line);
     W.add.push(line);
@@ -1148,7 +1170,7 @@ const LW = (() => {
     delete W.ev[e.id];
     W.fired[e.id] = cx.turn;
     for (const f of e.sets) W.flags[f] = 1;
-    if (e.log) addLog(X, W, e.log);
+    if (e.log) W.pendLog.push("");     // logged by the AI, as it really happened
   };
   const startEvent = (X, L, e, cx) => {
     if (L.w.fired[e.id] != null || L.w.ev[e.id]) return;
@@ -1179,7 +1201,8 @@ const LW = (() => {
     const R = rng(hashStr("q" + act + ":" + (A.seed || W.seed) + ":" + W.reroll));
     const shuf = (a) => { const x = a.slice(); for (let i = x.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); const t = x[i]; x[i] = x[j]; x[j] = t; } return x; };
     const fixed = all.filter((b) => b.kind !== "bank"), bank = all.filter((b) => b.kind === "bank");
-    const pick = Math.max(0, A.pick);
+    // pick: how many bank beats this act draws, a number, a share of the act's bank (75%) or all
+    const pick = A.pick === "all" ? bank.length : /%$/.test(A.pick) ? Math.round((bank.length * parseFloat(A.pick)) / 100) : Math.max(0, num(A.pick, 2));
     let f, p;
     if (mode === "authored") { f = fixed; p = bank; }
     else if (mode === "random") { f = []; p = shuf(all).slice(0, Math.min(all.length, fixed.length + pick)); }
@@ -1188,36 +1211,46 @@ const LW = (() => {
   };
   const fireBeat = (X, L, b, cx) => {
     const W = L.w;
-    W.fired[b.id] = cx.turn; W.bt = null; W.btEnd = cx.turn;
+    W.fired[b.id] = cx.turn; W.bt = null; W.btEnd = cx.turn; W.btEndS = W.scu || 0;
     for (const f of b.sets) W.flags[f] = 1;
-    if (b.log) addLog(X, W, b.log); else W.pendLog.push("Story beat: " + b.title + ".");   // the AI is asked to write what happened
+    // the AI is asked to log what really happened: the beat's own text may never have made it into the story
+    W.pendLog.push("");
     if (X.cfg.s.clock && X.cfg.s.clock_on_beat) advTod(X, W, 1);
   };
   const actDone = (W, q) => q.f.every((id) => W.fired[id] != null) && ((q.mode === "random" || !q.f.length) ? q.p.every((id) => W.fired[id] != null) : true);
   const arcStep = (X, L, cx) => {
-    const A = X.arc, W = L.w;
+    const A = X.arc, W = L.w, s = X.cfg.s;
     if (!A.beats.length || W.arcDone) return;
     if (!W.q[W.act]) buildQueue(X, L, A, W.act);
+    // by scenes the clock is the scene count, kept apart from the turn marks (a save can switch between the two)
+    const byScene = String(s.arc_pace || "scenes").toLowerCase() !== "turns";
+    const now = byScene ? W.scu || 0 : cx.turn;
+    const mk = byScene ? { at: "su", end: "btEndS", act: "actAtS" } : { at: "at", end: "btEnd", act: "actAt" };
     if (W.bt) {
       const b = beatById(A, W.bt.id);
+      if (W.bt[mk.at] == null) W.bt[mk.at] = now;
       if (!b) W.bt = null;
-      else if (cx.turn - W.bt.at >= (b.hold || A.hold)) fireBeat(X, L, b, cx);
+      else if (W.bt.at === -1000 || now - W.bt[mk.at] >= (byScene ? 1 : b.hold || A.hold)) fireBeat(X, L, b, cx);   // -1000: the AI wrote {beat}
     }
     const q = W.q[W.act];
-    // act_turns: an act lasts at least that many turns, even when its beats are done early (bank beats and twists fill the wait)
-    if (!W.bt && actDone(W, q) && cx.turn - (W.actAt || 0) >= X.cfg.s.act_turns) {
+    // an act lasts at least act_scenes scenes (act_turns turns), even when its beats are done early (bank beats and twists fill the wait)
+    // the drawn bank beats get their turn too; one that never fits (prob, met>=2) holds the act at most twice as long
+    const minA = byScene ? s.act_scenes : s.act_turns, since = now - (W[mk.act] || 0);
+    const bankDone = q.p.every((id) => W.fired[id] != null) || since >= 2 * minA;
+    if (!W.bt && actDone(W, q) && bankDone && since >= minA) {
       if (W.act >= A.maxAct) { W.arcDone = true; addLog(X, W, "The story arc comes to its end."); return; }
-      W.act++; W.btEnd = cx.turn; W.actAt = cx.turn;
+      W.act++; W[mk.end] = now; W[mk.act] = now;
       buildQueue(X, L, A, W.act);
       const an = (A.acts[W.act] || {}).name;
       addLog(X, W, "Act " + W.act + " begins" + (an ? ": " + an : "") + ".");
       return;
     }
-    if (!W.bt && cx.turn - W.btEnd >= X.cfg.s.beat_gap) {
+    // by scenes a beat only starts with a new scene, so it has the whole scene to happen
+    if (!W.bt && (!byScene || cx.newScene) && now - (W[mk.end] != null ? W[mk.end] : -999) >= (byScene ? s.beat_gap_scenes : s.beat_gap)) {
       const ok = (id) => { const b = beatById(A, id); return !!b && W.fired[id] == null && condsOk(X, L, cx, b.when, id); };
       const fid = q.f.find((id) => W.fired[id] == null);
       const pick = fid && ok(fid) ? fid : q.p.find(ok) || null;
-      if (pick) W.bt = { id: pick, at: cx.turn };
+      if (pick) W.bt = { id: pick, at: cx.turn, su: W.scu || 0 };
     }
   };
 
@@ -1268,9 +1301,7 @@ const LW = (() => {
       W.tw.st++; W.tw.at = cx.turn;
       if (W.tw.st <= t.stages.length) return;
       for (const f of t.sets) W.flags[f] = 1;
-      const done = twistFill(t.log || t.stages[t.stages.length - 1], W.tw.who);
-      const line = done.charAt(0).toUpperCase() + done.slice(1) + ".";
-      if (t.log) addLog(X, W, line); else W.pendLog.push(line);
+      W.pendLog.push("");     // logged by the AI, as it really happened (the planned text may not have)
       W.tw = null; W.twEnd = cx.turn;
       return;
     }
@@ -1314,9 +1345,9 @@ const LW = (() => {
     const names = tp.instr.map((ch) => ch.first);
     const tones = tp.instr.filter((ch) => ch.cfg.vals.tone).map((ch) => ch.first + " " + String(ch.cfg.vals.tone).replace(/_/g, " "));
     const mood = X.cfg.s.mood;
-    return "Begin the reply with " + names.map((n) => n + (mood ? " thinks (x): «...»" : " thinks: «...»")).join(" ") +
+    return "Begin the reply with " + names.map((n) => n + (mood ? " thinks (=): «...»" : " thinks: «...»")).join(" ") +
       ": one new first-person sentence each, under " + X.cfg.s.thoughts_words + " words, naming people, not pronouns" +
-      (mood ? "; replace x with + if warmer toward the protagonist, - if cooler, = if unchanged" : "") +
+      (mood ? "; in the brackets put + if warmer toward the protagonist, - if cooler, = if unchanged" : "") +
       (tones.length ? "; tone: " + tones.join(", ") : "") + ". Then continue the story.";
   };
 
@@ -1693,7 +1724,7 @@ const LW = (() => {
       if (sub === "act") {
         const n = parseInt(val, 10);
         if (!(n >= 1 && n <= A.maxAct)) return { note: "Use /arc act 1 to " + A.maxAct + "." };
-        W.act = n; W.bt = null; W.arcDone = false; W.btEnd = turn; W.actAt = turn; buildQueue(X, L, A, n);
+        W.act = n; W.bt = null; W.arcDone = false; W.btEnd = turn; W.actAt = turn; W.btEndS = W.actAtS = W.scu || 0; buildQueue(X, L, A, n);
         return { note: "Moved to act " + n + ". " + arcStatus(X, L) };
       }
       if (sub === "next") {
@@ -1906,11 +1937,23 @@ const LW = (() => {
     }
 
     let body = text, logged = false;
+    // a log the AI writes: a real sentence ("{log: just happened}" is not one), told in the third person
+    // ponytail: "you" becomes "the protagonist" with has/is/was fixed; other verbs after it are already past tense
+    const aiLog = (v) => {
+      const t = String(v).trim()
+        .replace(/\byou(?:'|’)re\b/gi, "the protagonist is").replace(/\byou(?:'|’)ve\b/gi, "the protagonist has")
+        .replace(/\byourself\b/gi, "themselves").replace(/\byour\b/gi, "the protagonist's").replace(/\byou\b/gi, "the protagonist")
+        .replace(/\bthe protagonist (have|are|were)\b/g, (m, w) => "the protagonist " + { have: "has", are: "is", were: "was" }[w])
+        .replace(/^the/, "The");
+      if (t.split(/\s+/).length < 4) return false;
+      addLog(X, W, t);
+      return true;
+    };
     // markers the AI may write: {flag:x} {event:x} {beat} {log:text}
     const onMark = (m, k, v) => {
       const kind = k.toLowerCase(), val = String(v || "").trim();
       if (kind === "flag" && val) W.flags[slug(val)] = 1;
-      else if (kind === "log" && val) { addLog(X, W, val); logged = true; }
+      else if (kind === "log" && val) logged = aiLog(val) || logged;
       else if (kind === "event") { const e = X.ev.find((x) => x.id === slug(val)); if (e) startEvent(X, L, e, { turn }); }
       else if (kind === "beat" && W.bt) W.bt.at = -1000;
       return "";
@@ -1918,16 +1961,17 @@ const LW = (() => {
     // the AI sometimes forgets the closing brace: then the marker runs to the end of its line
     body = body.replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}]*))?\}/gi, onMark)
       .replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}\n]*))?$/gim, onMark)
-      .replace(/[ \t]{2,}/g, " ").replace(/\s+$/, "");
+      .replace(/^[ \t]*[*_]*log[ \t]*:[ \t]*([^\n]*\S)[ \t]*(?:\n|$)/gim, (m, v) => onMark(m, "log", v))   // "log: ..." with no braces
+      .replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").replace(/\s+$/, "");
     // any other braces, "{The protagonist laughs}" or "{just happened: ...}" (a key of the AI's own, up to 3 words, is dropped):
     // the log when one was asked for, and out of the story either way (braces never belong in the prose)
     body = body.replace(/\{([^{}\n]{3,})(?:\}[ \t]*|$)/gm, (m, v) => {
       const t = v.replace(/^\s*[^:\s][^:]{0,30}?:\s*(?=\S)/, (k) => (k.trim().split(/\s+/).length <= 3 ? "" : k)).trim();
-      if (t && W.pendLog.length && !logged) { addLog(X, W, t); logged = true; }
+      if (t && W.pendLog.length && !logged) logged = aiLog(t);
       return "";
     });
     if (/^\s*\{/.test(text)) body = text.match(/^\s*/)[0] + body.replace(/^\s+/, "");   // a marker on the first line
-    // a twist or beat that ended last turn: the AI was asked for a {log:...}; without one, the generic text goes in
+    // a twist, beat or scene that ended last turn: the AI was asked for a {log:...}; without one, nothing is written
     // ponytail: a Continue skips the Input hook, so nothing was asked: the request waits for the next action
     if (W.pendLog.length && (logged || W.asked)) { if (!logged) W.pendLog.forEach((l) => addLog(X, W, l, true)); W.pendLog = []; }   // generic lines are not memories
     W.asked = false;
@@ -1953,9 +1997,19 @@ const LW = (() => {
     // the thought ends at its closing quote; with no quotes, at a sentence that starts with a character's name
     // or past thoughts_words words. Whatever follows on the line stays in the story (and may hold the next thought)
     // ponytail: a short unquoted narration sentence right after the thought is taken as part of it
+    // an unclosed «: the thought runs to its last first-person sentence (before any dialogue), the narration after it stays
+    const FIRSTP = /\b(?:I|me|my|mine|myself|we|us|our|ours)\b/;
     const splitThought = (raw) => {
-      const s = String(raw).trim();
-      if (/^[*_]*«/.test(s)) { const i = s.indexOf("»"); return i < 0 ? [s, ""] : [s.slice(0, i + 1), s.slice(i + 1).replace(/^[*_]*\s*/, "")]; }
+      let s = String(raw).trim();
+      if (/^[*_]*«/.test(s)) {
+        const i = s.indexOf("»");
+        if (i >= 0) return [s.slice(0, i + 1), s.slice(i + 1).replace(/^[*_]*\s*/, "")];
+        const sents = s.replace(/([.!?…])(?=[A-Z])/g, "$1 ").split(/(?<=[.!?…])\s+/);
+        let k = 0;
+        for (let j = 0; j < sents.length && !/["“]/.test(sents[j]); j++) if (FIRSTP.test(sents[j])) k = j + 1;
+        if (k) return [sents.slice(0, k).join(" "), sents.slice(k).join(" ")];
+        s = s.replace(/^[*_]*«/, "");
+      }
       const q = s.match(/^[*_]*(?:"([^"]*)"|“([^”]*)”)[*_]*\s*([\s\S]*)$/);
       if (q) return [q[1] != null ? q[1] : q[2], q[3]];
       const sents = s.replace(/^[*_]*["“]/, "").split(/(?<=[.!?…])\s+/);
@@ -1972,11 +2026,16 @@ const LW = (() => {
       const words = nm.split(" ");
       let k = 0, ch = null;
       for (; k < words.length; k++) { ch = findChar(X, words.slice(k).join(" ")); if (ch && L.rel[ch.id]) break; }
-      if (k === words.length) return m;
+      if (k === words.length) {
+        // our own format ("(x)" or «) from someone with no relations: not stored, but it still leaves the story
+        if (showTh || (sg == null && !/^[*_]*«/.test(String(t).trim()))) return m;
+        removed = true;
+        return ind + [words.slice(0, -1).join(" "), splitThought(t)[1]].filter(Boolean).join(" ");
+      }
       const [tx, rest] = splitThought(t);
       // ponytail: an unquoted "thought" that names its own thinker and has no I/me/my/we is narration under a thought tag:
       // the tag goes, the text stays, nothing is stored
-      if (!/^[*_]*[«"“]/.test(String(t).trim()) && lastPos(ch, tx) >= 0 && !/\b(?:I|me|my|mine|myself|we|us|our|ours|I'm|I'd|I'll|I've|I’m|I’d|I’ll|I’ve)\b/.test(tx)) return ind + [tx, rest].filter(Boolean).join(" ");
+      if (!/^[*_]*[«"“]/.test(String(t).trim()) && lastPos(ch, tx) >= 0 && !FIRSTP.test(tx)) return ind + [tx, rest].filter(Boolean).join(" ");
       const shown = grab(ch, tx, sg);
       if (shown == null) return m;
       if (!showTh) removed = true;
@@ -1999,7 +2058,9 @@ const LW = (() => {
           return words.slice(0, k).join(" ") + (k ? " " : "");
         }
       }
-      return m;
+      if (showTh) return m;
+      removed = true;
+      return words.slice(0, -1).join(" ") + (words.length > 1 ? " " : "");
     });
     // a mangled thought tag with no thought in it, like "(Elowen: =)" or "(Elowen thinks: +)": it leaves the story
     body = body.replace(/\(\s*([A-Z][\w'’\-]*(?: [\w'’\-]+){0,2})(?:\s+thinks)?\s*:?\s*(?:[+\-−=]\s*[\d.]*|\d[\d.]*)\s*\)[ \t]*/g, (m, nm) => {
@@ -2020,7 +2081,7 @@ const LW = (() => {
     }
     W.auto = [];
     W.force = W.force.filter((id) => !found.some((f) => f.ch.id === id));   // /think holds until the thought arrives (the AI may skip it)
-    if (removed) body = body.replace(/^\s+/, "").replace(/\n{3,}/g, "\n\n");
+    if (removed) body = body.replace(/^\s+/, "").replace(/[ \t]+$/gm, "").replace(/\n{3,}/g, "\n\n");
 
     const ids = presentIds(X, body, 12);
     for (const f of found) if (!ids.includes(f.ch.id)) ids.push(f.ch.id);     // whoever thought was in the scene
@@ -2083,17 +2144,23 @@ const LW = (() => {
 
     // scenes and clock
     const jump = detectJump(act + "\n" + body);           // your action counts too ("I sleep until morning")
-    if (jump) { W.sc = { n: W.sc.n + 1, t: 0 }; if (ts.clock) applyJump(X, W, jump); }
+    // a jump that leaves the clock where it was ("that night" when it is already night) is no new scene
+    const was = W.day + ":" + W.tod;
+    if (jump && ts.clock) applyJump(X, W, jump);
+    const moved = !!jump && (!ts.clock || was !== W.day + ":" + W.tod);
+    if (moved) W.sc = { n: W.sc.n + 1, t: 0 };
     else {
       W.sc.t++;
       if (ts.clock) { W.ct++; if (ts.clock_turns > 0 && W.ct >= ts.clock_turns) advTod(X, W, 1); }
     }
     // scene summaries: when a scene closes, or every chronicle_every turns of a long one, the AI logs what happened
     // (an empty fallback: nothing generic is written if it forgets)
-    if (ts.chronicle_every > 0 && (jump || W.sc.t % ts.chronicle_every === 0)) W.pendLog.push("");
+    if (ts.chronicle_every > 0 && (moved || W.sc.t % ts.chronicle_every === 0)) W.pendLog.push("");
 
-    // events and the arc
-    const cx = { turn, present: ids, bad: 0 };
+    // events and the arc; W.scu counts closed scenes (a long scene closes every scene_len turns, like the stats' scenes)
+    const unit = W.sc.n + ":" + Math.floor(W.sc.t / Math.max(3, num(ts.scene_len, 6))), newScene = W.scuK !== unit;
+    if (newScene) { W.scuK = unit; W.scu = (W.scu || 0) + 1; }
+    const cx = { turn, present: ids, bad: 0, newScene };
     eventStep(X, L, cx);
     arcStep(X, L, cx);
     twistStep(X, L, cx);
