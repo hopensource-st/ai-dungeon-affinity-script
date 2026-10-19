@@ -671,8 +671,9 @@ const LW = (() => {
         .slice(0, 2).map((c) => c.first);
       if (quiet.length) add(5, "Pronto, dale a " + andList(quiet) + " un momento con el protagonista.");
     }
-    add(1, tp ? thoughtInstr(X, tp, L) : "");
+    // las dos quieren el principio de la respuesta: primero la línea del log, justo después los pensamientos
     if (W.pendLog.length) add(1, "Pon {log: una frase en pasado que resuma lo que acaba de pasar} sola en la primera línea de la respuesta.");
+    add(1, tp ? thoughtInstr(X, tp, L).replace(/^Empieza la respuesta con/, W.pendLog.length ? "Tras esa línea, escribe" : "Empieza la respuesta con") : "");
     if (s.contact) {
       const names = L.allow.map((id) => X.byId[id] && X.byId[id].first).filter(Boolean);
       if (names.length) add(0, "El protagonista permite que " + names.join(" y ") + " le toque solo en esta acción.");
@@ -2007,6 +2008,12 @@ const LW = (() => {
         }
       }
       return m;
+    });
+    // una etiqueta de pensamiento deformada y sin pensamiento, como "(Inés: =)" o "(Inés piensa: +)": sale de la historia
+    body = body.replace(/\(\s*(\p{Lu}[\p{L}\p{N}_'’\-]*(?: [\p{L}\p{N}_'’\-]+){0,2})(?:\s+(?:piensa|thinks))?\s*:?\s*[+\-=]\s*\)[ \t]*/gu, (m, nm) => {
+      if (!findChar(X, nm)) return m;
+      removed = true;
+      return "";
     });
     if (W.auto && W.auto.length) {
       const lines = [];

@@ -274,6 +274,9 @@ assert(!/\{log/.test(unclosed) && G.state.lw.w.log.some((l) => /Mira agreed to k
 const first = turn("I wait.", "{log: Mira locked the cellar for the night.}\nMira yawns.");
 assert.strictEqual(first, "Mira yawns.");
 
+// a mangled thought tag with no thought in it leaves the story
+assert.strictEqual(turn("I bow.", "(Mira: =) She curtsies deeply."), "She curtsies deeply.");
+
 // memories: a chronicle entry that names a character stays in their Notes, and comes back once the chronicle has moved on
 turn("I wait.", "Mira sighs. {log: Mira forgave the protagonist for the broken mug.}");
 assert(/^m: \(Day \d+\) Mira forgave the protagonist for the broken mug\.$/m.test(storyCards[0].description), "memory in Mira's Notes:\n" + storyCards[0].description);

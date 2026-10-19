@@ -653,8 +653,9 @@ const LW = (() => {
         .slice(0, 2).map((c) => c.first);
       if (quiet.length) add(5, "Soon give " + andList(quiet) + " a moment with the protagonist.");
     }
-    add(1, tp ? thoughtInstr(X, tp, L) : "");
+    // both want the top of the reply: the log line first, the thoughts right after it
     if (W.pendLog.length) add(1, "Put {log: one past-tense sentence summing up what just happened} alone on the first line of the reply.");
+    add(1, tp ? thoughtInstr(X, tp, L).replace(/^Begin the reply with/, W.pendLog.length ? "After that line, write" : "Begin the reply with") : "");
     if (s.contact) {
       const names = L.allow.map((id) => X.byId[id] && X.byId[id].first).filter(Boolean);
       if (names.length) add(0, "The protagonist permits " + names.join(" and ") + " to touch them in this action only.");
@@ -1975,6 +1976,12 @@ const LW = (() => {
         }
       }
       return m;
+    });
+    // a mangled thought tag with no thought in it, like "(Elowen: =)" or "(Elowen thinks: +)": it leaves the story
+    body = body.replace(/\(\s*([A-Z][\w'’\-]*(?: [\w'’\-]+){0,2})(?:\s+thinks)?\s*:?\s*[+\-=]\s*\)[ \t]*/g, (m, nm) => {
+      if (!findChar(X, nm)) return m;
+      removed = true;
+      return "";
     });
     if (W.auto && W.auto.length) {
       const lines = [];

@@ -102,6 +102,9 @@ assert(/^Inés te observa un momento, tamborileando en la barra\.$/.test(una.tri
 const abierto = turn("Espero.", "Inés asiente.\n{log: Inés prometió guardar el secreto.");
 assert(!/\{log/.test(abierto) && G.state.lw.w.log.some((l) => /Inés prometió guardar el secreto/.test(l)), "log sin cerrar: " + abierto);
 
+// una etiqueta de pensamiento deformada y sin pensamiento sale de la historia
+assert.strictEqual(turn("Hago una reverencia.", "(Inés: =) Hace una reverencia profunda."), "Hace una reverencia profunda.");
+
 // recuerdos: una entrada de la crónica que nombra a Inés se queda en sus Notes y vuelve cuando la crónica ya ha avanzado
 turn("Espero.", "Inés suspira. {log: Inés perdonó a la protagonista por la jarra rota.}");
 assert(/^m: \(Día \d+\) Inés perdonó a la protagonista por la jarra rota\.$/m.test(notes(1)), "recuerdo en las Notes de Inés:\n" + notes(1));
