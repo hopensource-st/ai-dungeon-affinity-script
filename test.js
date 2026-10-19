@@ -289,6 +289,17 @@ assert(G.state.lw.w.day === dayA + 1 && G.state.lw.rel["1"].touched.length === t
 cont();
 assert(G.state.lw.w.day === dayA + 1 && G.state.lw.rel["1"].touched.length === tA + 1, "the Continue does not repeat them");
 
+// an unquoted thought in the middle of a paragraph: stored, and the narration around it stays
+const mid = turn("I wait.", "The bar is quiet. Then Mira thinks (-): Tobin forgot the kegs again. She wipes the counter.");
+assert(/^t: Tobin forgot the kegs again\.$/m.test(storyCards[0].description) && mid === "The bar is quiet. She wipes the counter.", "mid-paragraph unquoted: " + mid);
+
+// /think holds until the thought arrives: a reply that skips it does not cancel it
+run("input", "/think Mira");
+turn("I wait.", "Mira polishes a glass.");
+assert(G.state.lw.w.force.includes("1") && /Mira thinks \(x\)/.test(G.state.memory.frontMemory), "still asked after a reply with no thought: " + JSON.stringify(G.state.lw.w.force) + " " + G.state.memory.frontMemory);
+turn("I wait.", "Mira thinks (=): «The glasses never stay clean.»\nMira sighs.");
+assert(!G.state.lw.w.force.includes("1"), "done once the thought arrives");
+
 // bare braces with no "log:" key: logged when a log was asked for, and removed from the story
 G.state.lw.w.pendLog = [""];
 const bare = turn("I wait.", "{The protagonist comments on the irony of the curse}\nMira laughs.");

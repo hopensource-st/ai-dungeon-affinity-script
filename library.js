@@ -19,7 +19,7 @@ const LW = (() => {
   const WBLOCK = /<<LWW\n[\s\S]*?\nLWW>>/;
   const BASERE = /^[ \t]*base:[^\n]*\n?/gim;
   const THSTRIP = /^[ \t]*[A-Z][\w'’\- ]{0,30} thinks(?: \(\s*(?:[+\-−=]\s*[\d.]*|\d[\d.]*)\s*\))?: «[^»\n]*»[ \t]*\n?/gm;
-  const THRE = /^([ \t]*)[*_]*([A-Z][\w'’\-]*(?: [\w'’\-]+){0,3}?)[*_]*\s+thinks\s*(?:\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*)\s*\)\s*)?(?::\s*|(?=\s*[«"“]))[*_]*\s*(.+?)\s*[»"”]?[*_]*[ \t]*$/gm;
+  const THRE = /(^[ \t]*|(?<=[.!?…»"”)*_][ \t]+))[*_]*([A-Z][\w'’\-]*(?: [\w'’\-]+){0,3}?)[*_]*\s+thinks\s*(?:\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*)\s*\)\s*)?(?::\s*|(?=\s*[«"“]))[*_]*\s*(.+?)\s*[»"”]?[*_]*[ \t]*$/gm;
 
   // ---- defaults (used when there is no Config card) ------------------------
   const DEF = {
@@ -1302,13 +1302,10 @@ const LW = (() => {
       cand.push({ ch, r, score: forced ? 4 : changed ? 3 : never ? 2 : 1 });
     }
     cand.sort((a, b) => b.score - a.score || (b.r.s[first] || 0) - (a.r.s[first] || 0));
-    const used = [];
     for (const c of cand.slice(0, Math.max(1, s.thoughts_max))) {
-      used.push(c.ch.id);
       const bases = getBases(c.ch);
       if (c.r.bi < bases.length) out.auto.push({ id: c.ch.id, text: bases[c.r.bi] }); else out.instr.push(c.ch);
     }
-    W.force = W.force.filter((id) => !used.includes(id));
     return out;
   };
   const thoughtInstr = (X, tp, L) => {
@@ -1927,7 +1924,7 @@ const LW = (() => {
     if (/^\s*\{/.test(text)) body = text.match(/^\s*/)[0] + body.replace(/^\s+/, "");   // a marker on the first line
     // a twist or beat that ended last turn: the AI was asked for a {log:...}; without one, the generic text goes in
     // ponytail: a Continue skips the Input hook, so nothing was asked: the request waits for the next action
-    if (W.pendLog.length && (logged || W.asked)) { if (!logged) W.pendLog.forEach((l) => addLog(X, W, l)); W.pendLog = []; }
+    if (W.pendLog.length && (logged || W.asked)) { if (!logged) W.pendLog.forEach((l) => addLog(X, W, l, true)); W.pendLog = []; }   // generic lines are not memories
     W.asked = false;
 
     // thoughts: the AI writes "Name thinks: «...»"; the engine stores it in the card's Notes and, unless
@@ -1960,19 +1957,22 @@ const LW = (() => {
       let n = 0, k = 0;
       for (; k < sents.length; k++) {
         const w = sents[k].split(/\s+/).length, first = sents[k].replace(/^[*_]+/, "").split(/[\s,]/)[0];
-        if (k && (n + w > X.cfg.s.thoughts_words || findChar(X, first))) break;
+        if (k && (n + w > X.cfg.s.thoughts_words || findChar(X, first) || /^(?:He|She|They|His|Her|Their|Its)$/.test(first))) break;
         n += w;
       }
       return [sents.slice(0, k).join(" "), sents.slice(k).join(" ")];
     };
     const onThink = (m, ind, nm, sg, t) => {
-      const ch = findChar(X, nm);
-      if (!ch || !L.rel[ch.id]) return m;
+      // "Then Mira thinks": the name is the last words before "thinks"
+      const words = nm.split(" ");
+      let k = 0, ch = null;
+      for (; k < words.length; k++) { ch = findChar(X, words.slice(k).join(" ")); if (ch && L.rel[ch.id]) break; }
+      if (k === words.length) return m;
       const [tx, rest] = splitThought(t);
       const shown = grab(ch, tx, sg);
       if (shown == null) return m;
       if (!showTh) removed = true;
-      return ind + [showTh ? shown : "", rest].filter(Boolean).join(" ");
+      return ind + [showTh ? words.slice(0, k).concat(shown).join(" ") : "", rest].filter(Boolean).join(" ");
     };
     for (let i = 0, prev = null; i < 6 && prev !== body; i++) { prev = body; body = body.replace(THRE, onThink); }
     // mid-paragraph too, in «», "" or “” quotes
@@ -2009,6 +2009,7 @@ const LW = (() => {
       if (lines.length && showTh) body = lines.join("\n") + "\n\n" + body.replace(/^\s+/, "");
     }
     W.auto = [];
+    W.force = W.force.filter((id) => !found.some((f) => f.ch.id === id));   // /think holds until the thought arrives (the AI may skip it)
     if (removed) body = body.replace(/^\s+/, "").replace(/\n{3,}/g, "\n\n");
 
     const ids = presentIds(X, body, 12);
