@@ -14,7 +14,7 @@ Desde el parche 2.39.0 (agosto de 2026), AI Dungeon tiene **Scripts como conteni
 4. **Marca el escenario como Script.**
 5. **Portada:** una imagen que represente vínculos, recuerdos o hilos entre personajes.
 6. **Publica.** Los escenarios pasan por la moderación automática antes de publicarse.
-7. **Pruébalo como jugador:** en una partida cualquiera (por ejemplo, un escenario ajeno con tarjetas de personaje), añade el Script, juega una acción y escribe `/check`. Debe decir `LW Affinity Engine` y la versión (ahora `1.1.0`) y el número de personajes que ha encontrado.
+7. **Pruébalo como jugador:** en una partida cualquiera (por ejemplo, un escenario ajeno con tarjetas de personaje), añade el Script, juega una acción y escribe `/check`. Debe decir `LW Affinity Engine` y la versión (ahora `1.1.1`) y el número de personajes que ha encontrado.
 
 ### Al actualizar
 1. Sube el número en `const VERSION = "1.0.0"` (línea 8 de `library.js`): `1.0.1` para arreglos, `1.1.0` para funciones nuevas.
@@ -41,7 +41,7 @@ Give every character in your adventure a relationship with you that grows or sou
 
 WHAT IT DOES
 • Feelings: affinity, trust, attraction and obsession for every character card, plus one or two stats the AI designs for your story on the first action. Kind scenes raise them, cruel ones lower them, and the AI is only told what changed.
-• Thoughts: characters in the scene think in private now and then. Every thought is kept in a diary in their card's Notes, never in the story.
+• Thoughts: characters in the scene think in private now and then. Their latest thoughts are kept in their card's Notes, under their stats, never in the story.
 • Chronicle: the AI writes one line per scene into a Chronicle card and gets the last three back, so long stories keep their thread.
 • Clock: day and time of day, moved only when the story says time passes.
 • Surprises: twists fitted to whoever is in the scene, random ties between characters who meet, and a three-act arc whose beats are drawn differently every playthrough.
@@ -53,12 +53,16 @@ Add the script to an adventure or scenario and play. Your first action also lets
 COMMANDS (type them in Do, Say or Story)
 /rels · /rel Name · /set Name trust 5
 /npc Name, short description (also /place and /faction)
+/thoughts Name (their latest thoughts) · /think Name (they think next turn)
 /twist · /arc · /chronicle · /time · /peek · /check · /help
 
 TIPS
 • Keep your own character out: add "skip: YourName" to the LW Config card.
 • Choose your own yandere: put [cfg obsession:0.3] in that character's card Notes. No surprise yanderes: add "yandere_chance: 0" to LW Config.
 • Using another script that also writes Front Memory? Add "inject: text" to LW Config.
+
+WHAT'S NEW IN 1.1.1
+• No more thought diary: the latest 20 thoughts stay in the Notes block, under the stats, and the AI remembers the last 3.
 
 WHAT'S NEW IN 1.1.0
 • Secret yanderes: any character you meet might become quietly, dangerously obsessed with you. One per adventure at most, never announced.

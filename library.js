@@ -5,7 +5,7 @@
 // Stats, relations, thoughts, chronicle, events, arc, clock, scenes, cleaner, card creation, commands.
 // ============================================================================
 const LW = (() => {
-  const VERSION = "1.1.0";                                    // shown by /check; bump it on every published update
+  const VERSION = "1.1.1";                                    // shown by /check; bump it on every published update
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const num = (v, d) => { const n = parseFloat(v); return isNaN(n) ? d : n; };
   const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -61,7 +61,7 @@ const LW = (() => {
       mood_pos: "thank|smil|laugh|grin|help|hug|embrac|kiss|gift|prais|compliment|comfort|protect|forgiv|apologi|agree|welcom|reassur|kind|gentl|chuckl|blush",
       mood_neg: "insult|mock|sneer|lied|lying|liar|threat|slap|punch|shov|betray|yell|shout|scold|ignor|refus|glar|scowl|cruel|rude|angr|furious|disgust|humiliat|curs",
       auto_allow: true,
-      thoughts: true, thoughts_show: false, thoughts_interval: 4, thoughts_max: 2, thoughts_keep: 5, thoughts_diary: 100, thoughts_words: 20, thoughts_context: 2,
+      thoughts: true, thoughts_show: false, thoughts_interval: 4, thoughts_max: 2, thoughts_keep: 20, thoughts_words: 20, thoughts_context: 2, thoughts_recent: 3,
       chronicle_lines: 3, chronicle_every: 8, chronicle_max: 200, chronicle_stats: "affinity|attraction|obsession", chronicle_min: 4,
       clock: true, clock_times: "dawn|morning|afternoon|evening|night", clock_day: 1, clock_time: "morning", clock_turns: 0, clock_on_beat: false,
       scene: true, scene_len: 6,
@@ -429,10 +429,14 @@ const LW = (() => {
   const persist = (X, L, ch) => {
     const r = L.rel[ch.id];
     if (!r) return;
+    // an old diary ("~ (Day 3) text") joins the thoughts block and leaves the Notes
+    const DIARY = /^~ \(Day \d+\) /;
+    const lines = String(ch.card.description || "").split("\n"), old = lines.filter((l) => DIARY.test(l));
+    if (old.length) r.th = thDedupe(old.map((l) => l.replace(DIARY, "")).concat(r.th)).slice(-X.cfg.s.thoughts_keep);
     const text = blockText(X, ch, r);
-    if (getBlock(ch) === text && !BLOCK.test(ch.entry)) { L.mirror[ch.id] = text; return; }
+    if (!old.length && getBlock(ch) === text && !BLOCK.test(ch.entry)) { L.mirror[ch.id] = text; return; }
     // the entry stays purely what the AI reads; numbers go in the Notes field
-    const own = String(ch.card.description || "");
+    const own = lines.filter((l) => !DIARY.test(l)).join("\n");
     const cfgInNotes = (own.match(CFGRE) || [""])[0];
     ch.card.description = [strip(own), cfgInNotes, text].filter(Boolean).join("\n");
     if (BLOCK.test(ch.entry)) {                                // migrate an old entry block away
@@ -617,7 +621,7 @@ const LW = (() => {
       for (const id of ids) {
         const r = L.rel[id];
         if (n >= s.thoughts_context || !r || !r.th.length) continue;
-        add(5, X.byId[id].first + " was just thinking: \"" + r.th[r.th.length - 1].slice(0, 120) + "\".");
+        add(5, X.byId[id].first + " was just thinking: " + r.th.slice(-Math.max(1, s.thoughts_recent)).map((t) => "\"" + t.slice(0, 120) + "\"").join(" ") + ".");
         n++;
       }
     }
@@ -1340,15 +1344,6 @@ const LW = (() => {
     const [p, q] = R() < 0.5 ? [a, b] : [b, a];                 // who is {a} is random too (who owes whom)
     writeTie(X, p, q, d.text.replace(/\{a\}/gi, p.first).replace(/\{b\}/gi, q.first));
   };
-  // every thought also goes to a diary in the card's Notes ("~ (Day 3) text"): never sent to the AI and not kept in state
-  const diary = (X, ch, text) => {
-    const max = num(X.cfg.s.thoughts_diary, 0);
-    if (max <= 0) return;
-    const lines = String(ch.card.description || "").split("\n");
-    lines.push("~ (Day " + S().w.day + ") " + String(text).replace(/\s+/g, " "));
-    let extra = lines.filter((l) => /^~ /.test(l)).length - max;
-    ch.card.description = lines.filter((l) => !(/^~ /.test(l) && extra-- > 0)).join("\n");
-  };
   // the cfg line of a card: change one key (used by /thoughts Name N)
   const setCfgVal = (ch, key, val) => {
     const vals = Object.assign({}, ch.cfg.vals);
@@ -1933,7 +1928,7 @@ const LW = (() => {
     for (const f of found) {
       const r = L.rel[f.ch.id];
       if (!r) continue;
-      if (!r.th.some((o) => thSame(o, f.text))) { r.th.push(f.text); diary(X, f.ch, f.text); }   // a repeated thought is not stored again
+      if (!r.th.some((o) => thSame(o, f.text))) r.th.push(f.text);   // a repeated thought is not stored again
       while (r.th.length > X.cfg.s.thoughts_keep) r.th.shift();
       r.lastT = turn;
       r.tsig = thSig(X, f.ch, r);

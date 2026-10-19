@@ -4,7 +4,7 @@ A complete setup for one story (a cursed protagonist at a royal court) that uses
 
 How to use: create each card in the scenario editor under Story Cards. Set the card Type exactly as shown in each header (the engine finds its own cards by Type). Each block has up to three parts:
 - `Triggers:` goes in the Triggers field.
-- `Notes:` goes in the Notes field. The engine keeps its numbers, thought diary and logs here; Notes are never sent to the AI.
+- `Notes:` goes in the Notes field. The engine keeps its numbers, latest thoughts and logs here; Notes are never sent to the AI.
 - `Entry:` goes in the Entry field. This is the only text the AI reads, so it holds only what the AI needs every time the character is on stage. Secrets live in the Events and Arc cards, which reveal them at their own pace.
 
 Because this story writes its own Config, Relations, Chronicle, Events and Arc cards, the engine does not create its generic `LW` cards, and `autostats` stays off.
@@ -177,7 +177,7 @@ Put this in the Notes field of your existing protagonist card so the engine igno
 
 ## Character cards (Type: Character)
 
-The card title is the character's name, and every trigger also counts as a name (so `the King` already points at Aldric; `alias:` is only for names that are not triggers). Each character thinks every `thoughts:N` turns while in the scene, up to two characters per turn; every thought goes into a dated diary at the end of their Notes.
+The card title is the character's name, and every trigger also counts as a name (so `the King` already points at Aldric; `alias:` is only for names that are not triggers). Each character thinks every `thoughts:N` turns while in the scene, up to two characters per turn; their latest thoughts are kept in their Notes, under their stats.
 
 ```
 Triggers: Aldric, the King
