@@ -119,11 +119,16 @@ assert(!/keeps coming up/.test(replies[3]), "hint only once");
 assert(!replies.some((r) => /(Mira|Monday|Captain) keeps/.test(r)), "known names, weekdays and titles ignored");
 assert(storyCards.length === nCards, "no card created");
 
-// obsession: 0 and silent for ordinary characters, steady growth for a yandere card
+// obsession: 0 and silent for ordinary characters, steady growth for a yandere card, once per scene
 storyCards[1].description = "[cfg obsession:0.3]";
-for (let i = 0; i < 5; i++) turn("I wave.", "Tobin and Mira look up, turn " + i + ".");
+run("input", "/scene");
+const ob0 = G.state.lw.rel["2"].s.obsession;
+for (let i = 0; i < 2; i++) turn("I wave.", "Tobin and Mira look up, turn " + i + ".");
+const ob1 = G.state.lw.rel["2"].s.obsession;
+assert(ob1 - ob0 > 0.25 && ob1 - ob0 < 0.6, "one scene, one rise: " + ob0 + " -> " + ob1);
+for (let i = 0; i < 4; i++) turn("I wave.", "The next morning, Tobin and Mira look up.");
 assert(G.state.lw.rel["1"].s.obsession === 0, "Mira (ordinary) stays at 0");
-assert(G.state.lw.rel["2"].s.obsession > 1, "Tobin (yandere) grows: " + G.state.lw.rel["2"].s.obsession);
+assert(G.state.lw.rel["2"].s.obsession > 1, "Tobin (yandere) grows scene after scene: " + G.state.lw.rel["2"].s.obsession);
 
 // chronicle: when a twist ends the AI is asked for {log: ...}; its line goes in, the marker leaves the story
 const Wc = G.state.lw.w;
@@ -236,7 +241,7 @@ assert(/Corvina:/.test(run("input", "/rels").text), "tracked as Corvina, not Lad
 cfg.description += "\nyandere_chance: 100\nyandere_max: 5";
 storyCards.push({ id: 201, keys: "Selene", entry: "Selene, a quiet librarian.", type: "character", title: "Selene", description: "" });
 storyCards.push({ id: 202, keys: "Oswin", entry: "Oswin, the protagonist's father.", type: "character", title: "Oswin", description: "[cfg romance:no]" });
-for (let i = 0; i < 6; i++) turn("I mock Selene and Oswin.", "Selene and Oswin glare at you, round " + i + ".");
+for (let i = 0; i < 6; i++) turn("I mock Selene and Oswin.", "The next morning, Selene and Oswin glare at you.");
 const rSel = G.state.lw.rel["201"], rOsw = G.state.lw.rel["202"];
 assert(rSel.yr >= 0.2 && rSel.yr <= 0.4 && rSel.s.obsession > 1, "secret yandere grows even when mocked: " + JSON.stringify(rSel));
 assert(!rOsw.yr && rOsw.s.obsession === 0, "romance:no characters are never yanderes");

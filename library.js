@@ -1994,9 +1994,13 @@ const LW = (() => {
     const moodText = (L.lastAction || "") + "\n" + body;
     const damped = !!X.cfg.s.damp_words && new RegExp("\\b(?:" + X.cfg.s.damp_words + ")\\b", "i").test(body);
     const logStats = String(X.cfg.s.chronicle_stats || "").split("|").map((x) => x.trim()).filter(Boolean);
+    // a scene: from one time jump (or /scene) to the next, and a long one counts again every scene_len turns
+    // steady stats (and every stat with mood off) rise once per scene; mood moves the others on every action
+    const sceneKey = W.sc.n + ":" + Math.floor(W.sc.t / Math.max(3, num(X.cfg.s.scene_len, 6)));
     for (const id of ids) {
-      const ch = X.byId[id], r = L.rel[id];
-      r.scenes++;
+      const ch = X.byId[id], r = L.rel[id], newScene = r.sk !== sceneKey;
+      r.sk = sceneKey;
+      if (newScene) r.scenes++;
       r.last = turn;
       const accel = Math.min(1.5, 1 + r.scenes / (X.cfg.s.accel_scenes || 40));
       const snapshot = clone(r.s);
@@ -2004,6 +2008,7 @@ const LW = (() => {
       for (const d of activeStats(X, ch)) {
         const rate = rateOf(d, ch) || (d.steady && r.yr) || 0;     // r.yr: a secret yandere's obsession rate
         if (d.mode !== "auto" || rate <= 0) continue;
+        if ((d.steady || !X.cfg.s.mood) && !newScene) continue;
         const f = X.cfg.s.mood && !d.steady ? mood : 1;
         if (!f) continue;
         if (f > 0 && d.needs && !cmp(snapshot[d.needs.stat] != null ? snapshot[d.needs.stat] : 0, d.needs.op, d.needs.val)) continue;
