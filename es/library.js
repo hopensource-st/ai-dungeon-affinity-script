@@ -2070,8 +2070,9 @@ const LW = (() => {
       if (!showTh) removed = true;
       return ind + [showTh ? words.slice(0, k).concat(shown).join(" ") : "", rest].filter(Boolean).join(" ");
     };
-    // "Octavia (-): «...»" se salta "piensa": un nombre conocido con una señal y dos puntos también es un pensamiento
-    body = body.replace(/(^[ \t]*|(?<=[.!?…»"”)*_][ \t]+))[*_]*(\p{Lu}[\p{L}\p{N}_'’\-]*(?: [\p{L}\p{N}_'’\-]+){0,2})[*_]*\s*\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*)\s*\)\s*:[ \t]*/gmu, (m, ind, nm, sg) => (findChar(X, nm) ? ind + nm + " piensa (" + sg + "): " : m));
+    // "Octavia (-): «...»" o "Octavia: (-) ..." se salta "piensa": un nombre conocido con una señal y dos puntos también es un pensamiento
+    body = body.replace(/(^[ \t]*|(?<=[.!?…»"”)*_][ \t]+))[*_]*(\p{Lu}[\p{L}\p{N}_'’\-]*(?: [\p{L}\p{N}_'’\-]+){0,2})[*_]*\s*(?:\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\)\s*:|:\s*\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\))[ \t]*/gmu,
+      (m, ind, nm, s1, s2) => (findChar(X, nm) ? ind + nm + " piensa (" + (s1 || s2) + "): " : m));
     for (let i = 0, prev = null; i < 6 && prev !== body; i++) { prev = body; body = body.replace(THRE, onThink); }
     // también en mitad de un párrafo, entre «», "" o “”
     body = body.replace(/(\p{Lu}[\p{L}\p{N}_'’\-]*(?: [\p{L}\p{N}_'’\-]+){0,2}) (?:piensa|thinks)(?: \(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\))?: (?:«([^»\n]*)»|"([^"\n]*)"|“([^”\n]*)”)[ \t]*/gu, (m, nm, sg, q1, q2, q3) => {

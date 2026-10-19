@@ -2041,8 +2041,9 @@ const LW = (() => {
       if (!showTh) removed = true;
       return ind + [showTh ? words.slice(0, k).concat(shown).join(" ") : "", rest].filter(Boolean).join(" ");
     };
-    // "Octavia (-): «...»" leaves out "thinks": a known name with a sign and a colon is a thought too
-    body = body.replace(/(^[ \t]*|(?<=[.!?…»"”)*_][ \t]+))[*_]*([A-Z][\w'’\-]*(?: [\w'’\-]+){0,2})[*_]*\s*\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*)\s*\)\s*:[ \t]*/gm, (m, ind, nm, sg) => (findChar(X, nm) ? ind + nm + " thinks (" + sg + "): " : m));
+    // "Octavia (-): «...»" or "Octavia: (-) ..." leaves out "thinks": a known name with a sign and a colon is a thought too
+    body = body.replace(/(^[ \t]*|(?<=[.!?…»"”)*_][ \t]+))[*_]*([A-Z][\w'’\-]*(?: [\w'’\-]+){0,2})[*_]*\s*(?:\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\)\s*:|:\s*\(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\))[ \t]*/gm,
+      (m, ind, nm, s1, s2) => (findChar(X, nm) ? ind + nm + " thinks (" + (s1 || s2) + "): " : m));
     for (let i = 0, prev = null; i < 6 && prev !== body; i++) { prev = body; body = body.replace(THRE, onThink); }
     // mid-paragraph too, in «», "" or “” quotes
     body = body.replace(/([A-Z][\w'’\-]*(?: [\w'’\-]+){0,2}) thinks(?: \(\s*([+\-−=]\s*[\d.]*|\d[\d.]*|[xX?])\s*\))?: (?:«([^»\n]*)»|"([^"\n]*)"|“([^”\n]*)”)[ \t]*/g, (m, nm, sg, q1, q2, q3) => {

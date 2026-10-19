@@ -329,6 +329,9 @@ assert(tagged === "Tobin's grip tightens on the mug, and Mira's eyes narrow at t
 const noVerb = turn("I wait.", "Tobin (-): «Hero thinks a bow can hide the hunger I feel for them.»\nMira (+): «Hero is so kind; I would do anything to keep them smiling.»\nThe fire crackles.");
 assert(noVerb === "The fire crackles." && /^t: Hero is so kind; I would do anything to keep them smiling\.$/m.test(storyCards[0].description) && /^t: Hero thinks a bow can hide/m.test(storyCards[1].description), "no verb: " + noVerb);
 
+// "Name: (+) ..." puts the sign after the colon: still a thought
+const colonFirst = turn("I wait.", "Mira: (=) Hero walks like they own the stone, and I hate how proud that makes me.\n\nTobin: (+) Hero walks ahead of me like a shield; good.\n\nThe steward leads you on.");
+assert(colonFirst === "The steward leads you on." && /^t: Hero walks like they own the stone/m.test(storyCards[0].description), "colon first: " + colonFirst);
 // "(x)" copied from the instruction: stored as a thought with no sign
 const xs = turn("I wait.", "Mira thinks (x): The girl walks as if the palace might stop her, not the other way around.");
 assert(!/thinks/.test(xs) && /^t: The girl walks as if the palace might stop her, not the other way around\.$/m.test(storyCards[0].description), "(x): " + xs);
