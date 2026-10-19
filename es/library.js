@@ -1830,6 +1830,7 @@ const LW = (() => {
     }
     L.lastBlock = block;
     L.lastAction = createNow ? "" : rest.replace(MARK, "");
+    L.fresh = true;                                                 // the next reply answers this action (a Continue does not)
     L.pending = block;                                              // se guarda para el paso de contexto en los dos modos
     if (String(X.cfg.s.inject).toLowerCase() !== "text") { state.memory = state.memory || {}; state.memory.frontMemory = block; }
     if (pc && pc.cmd === "peek") note = block ? "La IA recibe: " + block : "Ahora mismo no se le envía nada a la IA.";
@@ -1914,6 +1915,7 @@ const LW = (() => {
       L.rel = clone(L.applied.rel);
       L.allow = L.applied.allow.slice();
       L.tension = clone(L.applied.tension || {});
+      L.fresh = L.applied.fresh;
       if (L.applied.w) L.w = clone(L.applied.w);
       const x = chrCard();                                  // entries appended by the retried reply come out of the card
       if (x && L.applied.chr != null) { x.c.description = L.applied.chr; L.wm = L.applied.chr.trim(); }
@@ -1921,8 +1923,11 @@ const LW = (() => {
       ensureW(L.w);
     } else {
       const x = chrCard();
-      L.applied = { turn, rel: clone(L.rel), allow: L.allow.slice(), tension: clone(L.tension), w: clone(L.w), chr: x ? chrSource(x) : null };
+      L.applied = { turn, rel: clone(L.rel), allow: L.allow.slice(), tension: clone(L.tension), w: clone(L.w), chr: x ? chrSource(x) : null, fresh: !!L.fresh };
     }
+    // a Continue has no action of its own: the last one already counted (its mood, time jump and touches)
+    const act = L.fresh ? L.lastAction || "" : "", touchNow = L.fresh ? L.touchNow || [] : [];
+    L.fresh = false;
     const W = L.w;
     if (W.create && W.create.done && W.create.doneTurn !== turn) W.create = null;
 
@@ -2040,7 +2045,7 @@ const LW = (() => {
 
     const ids = presentIds(X, body, 12);
     for (const f of found) if (!ids.includes(f.ch.id)) ids.push(f.ch.id);     // whoever thought was in the scene
-    const moodText = (L.lastAction || "") + "\n" + body;
+    const moodText = act + "\n" + body;
     const damped = !!X.cfg.s.damp_words && new RegExp("\\b(?:" + X.cfg.s.damp_words + ")\\b", "i").test(body);
     const logStats = String(X.cfg.s.chronicle_stats || "").split("|").map((x) => x.trim()).filter(Boolean);
     // una escena: de un salto de tiempo (o /escena) al siguiente, y una larga vuelve a contar cada scene_len turnos
@@ -2095,7 +2100,7 @@ const LW = (() => {
     }
 
     // scenes and clock
-    const jump = detectJump((L.lastAction || "") + "\n" + body);           // tu acción también cuenta ("duermo hasta el amanecer")
+    const jump = detectJump(act + "\n" + body);           // tu acción también cuenta ("duermo hasta el amanecer")
     if (jump) { W.sc = { n: W.sc.n + 1, t: 0 }; if (ts.clock) applyJump(X, W, jump); }
     else {
       W.sc.t++;
@@ -2117,7 +2122,7 @@ const LW = (() => {
     // un roce es amistoso salvo que alguna de sus frases sea brusca
     const warned = [], touched = [], kind = {};
     const hit = (id, k) => { if (!touched.includes(id)) touched.push(id); kind[id] = kind[id] !== false && k; };
-    for (const [id, k] of L.touchNow || []) if (L.rel[id]) hit(id, k);
+    for (const [id, k] of touchNow) if (L.rel[id]) hit(id, k);
     const mine = touched.slice();
     for (const sent of body.split(/(?<=[.!?])\s+/)) {
       if (!TOUCH.test(sent)) continue;

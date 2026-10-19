@@ -281,6 +281,14 @@ assert(G.state.lw.w.pendLog.length === 1 && !G.state.lw.w.log.some((l) => /A Con
 turn("I listen.", "{log: Mira told the whole story of the cellar.}\nMira finishes.");
 assert(!G.state.lw.w.pendLog.some((l) => /A Continue Check/.test(l)) && G.state.lw.w.log.some((l) => /whole story of the cellar/.test(l)), "asked on the next action, and answered: " + JSON.stringify(G.state.lw.w.pendLog));
 
+// a Continue does not reuse the last action: no second time jump, no second touch
+const cont = () => { G.info.actionCount++; const o = run("output", "Mira keeps talking."); G.history.push({ text: o }); };
+const dayA = G.state.lw.w.day, tA = G.state.lw.rel["1"].touched.length;
+turn("I take Mira's hand and sleep until dawn.", "Mira smiles.");
+assert(G.state.lw.w.day === dayA + 1 && G.state.lw.rel["1"].touched.length === tA + 1, "the action jumps and touches once");
+cont();
+assert(G.state.lw.w.day === dayA + 1 && G.state.lw.rel["1"].touched.length === tA + 1, "the Continue does not repeat them");
+
 // bare braces with no "log:" key: logged when a log was asked for, and removed from the story
 G.state.lw.w.pendLog = [""];
 const bare = turn("I wait.", "{The protagonist comments on the irony of the curse}\nMira laughs.");
