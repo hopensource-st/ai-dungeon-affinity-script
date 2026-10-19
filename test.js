@@ -332,6 +332,11 @@ assert(noVerb === "The fire crackles." && /^t: Hero is so kind; I would do anyth
 // "Name: (+) ..." puts the sign after the colon: still a thought
 const colonFirst = turn("I wait.", "Mira: (=) Hero walks like they own the stone, and I hate how proud that makes me.\n\nTobin: (+) Hero walks ahead of me like a shield; good.\n\nThe steward leads you on.");
 assert(colonFirst === "The steward leads you on." && /^t: Hero walks like they own the stone/m.test(storyCards[0].description), "colon first: " + colonFirst);
+// "Name: «...»" with no sign and no "thinks": still a thought
+const colonQuote = turn("I wait.", "Tobin: «Please, Hero, stay close to me.»\nThe hall is cold.");
+assert(colonQuote === "The hall is cold." && /^t: Please, Hero, stay close to me\.$/m.test(storyCards[1].description), "colon and quote: " + colonQuote);
+const colonPlain = turn("I wait.", "Tobin: \"The hall is too quiet tonight, I don't like it.\"\nWind howls.");
+assert(colonPlain === "Wind howls." && /^t: The hall is too quiet tonight, I don't like it\.$/m.test(storyCards[1].description), "colon and plain quotes: " + colonPlain);
 // "(x)" copied from the instruction: stored as a thought with no sign
 const xs = turn("I wait.", "Mira thinks (x): The girl walks as if the palace might stop her, not the other way around.");
 assert(!/thinks/.test(xs) && /^t: The girl walks as if the palace might stop her, not the other way around\.$/m.test(storyCards[0].description), "(x): " + xs);
