@@ -1948,7 +1948,9 @@ const LW = (() => {
     body = body.replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}]*))?\}/gi, onMark)
       .replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}\n]*))?$/gim, onMark)
       .replace(/[ \t]{2,}/g, " ").replace(/\s+$/, "");
-    if (/^\s*\{\s*(?:flag|event|beat|log)\b/i.test(text)) body = text.match(/^\s*/)[0] + body.replace(/^\s+/, "");   // una marca en la primera línea
+    // llaves sueltas sin clave, "{La protagonista se ríe}": son el log si se había pedido uno, y salen de la historia igualmente
+    body = body.replace(/\{([^{}\n:]{3,})\}[ \t]*/g, (m, v) => { if (W.pendLog.length && !logged) { addLog(X, W, v); logged = true; } return ""; });
+    if (/^\s*\{/.test(text)) body = text.match(/^\s*/)[0] + body.replace(/^\s+/, "");   // una marca en la primera línea
     // a twist or beat that ended last turn: the AI was asked for a {log:...}; without one, the generic text goes in
     if (W.pendLog.length) { if (!logged) W.pendLog.forEach((l) => addLog(X, W, l)); W.pendLog = []; }
 

@@ -274,6 +274,11 @@ assert(!/\{log/.test(unclosed) && G.state.lw.w.log.some((l) => /Mira agreed to k
 const first = turn("I wait.", "{log: Mira locked the cellar for the night.}\nMira yawns.");
 assert.strictEqual(first, "Mira yawns.");
 
+// bare braces with no "log:" key: logged when a log was asked for, and removed from the story
+G.state.lw.w.pendLog = [""];
+const bare = turn("I wait.", "{The protagonist comments on the irony of the curse}\nMira laughs.");
+assert(bare === "Mira laughs." && G.state.lw.w.log.some((l) => /comments on the irony of the curse/.test(l)), "bare braces: " + bare);
+
 // a sign written as a number, (+1) or (-2), still counts as + or -
 const aff1 = G.state.lw.rel["1"].s.affinity;
 turn("I wait.", "Mira thinks (+1): The way Tobin walks, so effortless, like he belongs here.\nMira smiles.");
