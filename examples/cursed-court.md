@@ -13,7 +13,7 @@ Commands and `[cfg ...]` keys: see the README, or type `/help` in game.
 
 ## Config card (Type: Config)
 
-Only what differs from the engine defaults. Everything not listed here uses the default (see the README).
+Only what differs from the engine defaults, plus every thoughts setting so they are easy to tune. Everything not listed here uses the default (see the README).
 
 ```
 Triggers: lw_config
@@ -43,6 +43,18 @@ tension_rate: 1
 # early game: introduce the cast during the first 40 actions
 early_actions: 40
 chronicle_stats: obsession|attraction
+# thoughts (all of them listed, defaults included, so they are easy to tune)
+# keep: how many stay in each character's Notes | recent: how many of those the AI gets per character
+# context: from how many characters per turn | interval: every N turns (a card's [cfg thoughts:N] wins)
+# max: how many characters think in one turn | words: length of each thought | show: on also shows them in the story
+thoughts: on
+thoughts_keep: 20
+thoughts_recent: 1
+thoughts_context: 2
+thoughts_interval: 4
+thoughts_max: 2
+thoughts_words: 20
+thoughts_show: off
 # random ties between characters with no written tie: rare, and only from the court deck in the Relations card
 bond_chance: 40
 # cleaner (writing any ban line replaces the default list)
