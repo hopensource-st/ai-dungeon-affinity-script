@@ -59,6 +59,11 @@ thoughts_interval: 4
 thoughts_max: 2
 thoughts_words: 20
 thoughts_show: off
+# memories: chronicle entries that name a character stay in their Notes (m: lines)
+# keep: how many per character | recent: how many the AI gets | context: from how many characters | recent 0 turns it off
+memories_keep: 8
+memories_recent: 2
+memories_context: 2
 # random ties between characters with no written tie: rare, and only from the court deck in the Relations card
 bond_chance: 40
 # cleaner (writing any ban line replaces the default list)

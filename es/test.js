@@ -91,6 +91,13 @@ c0 = conf();
 turn("Le agarro la muñeca a Inés y me burlo de ella.", "Inés se aparta.");
 assert(roces() === r0 + 3 && conf() <= c0, "un roce brusco cuenta pero no sube nada: " + c0 + " -> " + conf());
 
+// recuerdos: una entrada de la crónica que nombra a Inés se queda en sus Notes y vuelve cuando la crónica ya ha avanzado
+turn("Espero.", "Inés suspira. {log: Inés perdonó a la protagonista por la jarra rota.}");
+assert(/^m: \(Día \d+\) Inés perdonó a la protagonista por la jarra rota\.$/m.test(notes(1)), "recuerdo en las Notes de Inés:\n" + notes(1));
+for (const l of ["Paró de llover.", "Llegó un juglar.", "El pozo se heló."]) turn("/log " + l, "Nada.");
+turn("Miro a Inés.", "Inés tararea.");
+assert(/Inés recuerda: [^\]]*\(Día \d+\) Inés perdonó a la protagonista/.test(fm()), "la IA recibe el recuerdo: " + fm());
+
 // otro script pisa la frontMemory y el contexto va lleno: la línea va dentro del texto, recortando lo más antiguo de la historia
 G.info.actionCount++;
 run("input", "Miro a Inés.");

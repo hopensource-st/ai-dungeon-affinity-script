@@ -14,7 +14,7 @@ Desde el parche 2.39.0 (agosto de 2026), AI Dungeon tiene **Scripts como conteni
 4. **Marca el escenario como Script.**
 5. **Portada:** una imagen que represente vínculos, recuerdos o hilos entre personajes.
 6. **Publica.** Los escenarios pasan por la moderación automática antes de publicarse.
-7. **Pruébalo como jugador:** en una partida cualquiera (por ejemplo, un escenario ajeno con tarjetas de personaje), añade el Script, juega una acción y escribe `/check`. Debe decir `LW Affinity Engine` y la versión (ahora `1.1.3`) y el número de personajes que ha encontrado.
+7. **Pruébalo como jugador:** en una partida cualquiera (por ejemplo, un escenario ajeno con tarjetas de personaje), añade el Script, juega una acción y escribe `/check`. Debe decir `LW Affinity Engine` y la versión (ahora `1.1.4`) y el número de personajes que ha encontrado.
 
 ### Al actualizar
 1. Sube el número en `const VERSION = "1.0.0"` (línea 8 de `library.js`): `1.0.1` para arreglos, `1.1.0` para funciones nuevas.
@@ -42,7 +42,7 @@ Give every character in your adventure a relationship with you that grows or sou
 WHAT IT DOES
 • Feelings: affinity, trust, attraction and obsession for every character card, plus one or two stats the AI designs for your story on the first action. Kind scenes raise them, cruel ones lower them, and the AI is only told what changed.
 • Thoughts: characters in the scene think in private now and then. Their latest thoughts are kept in their card's Notes, under their stats, never in the story.
-• Chronicle: the AI writes one line per scene into a Chronicle card and gets the last three back, so long stories keep their thread.
+• Chronicle: the AI writes one line per scene into a Chronicle card and gets the last three back, so long stories keep their thread. Each character also keeps the moments that name them as memories of their own.
 • Clock: day and time of day, moved only when the story says time passes.
 • Surprises: twists fitted to whoever is in the scene, random ties between characters who meet, and a three-act arc whose beats are drawn differently every playthrough.
 • Card hints: when the AI keeps using a name with no card, you get a note with the exact /npc command to add one.
@@ -60,6 +60,9 @@ TIPS
 • Keep your own character out: add "skip: YourName" to the LW Config card.
 • Choose your own yandere: put [cfg obsession:0.3] in that character's card Notes. No surprise yanderes: add "yandere_chance: 0" to LW Config.
 • Another script also writes Front Memory? The engine notices and sends its line another way. If characters still never think, add "inject: text" to LW Config.
+
+WHAT'S NEW IN 1.1.4
+• Memories: each character keeps the chronicle moments that name them in their Notes, and remembers them when they are back in the scene.
 
 WHAT'S NEW IN 1.1.3
 • A friendly touch raises affinity, attraction, trust and obsession a little (a rough one does not). Touches are counted in every story: yours, and "she takes your hand" with no name.

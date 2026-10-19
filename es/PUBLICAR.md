@@ -14,11 +14,11 @@ Los pasos son los mismos que para la versión en inglés ([`../PUBLISHING.md`](.
 4. **Marca el escenario como Script.**
 5. **Portada:** una imagen que represente vínculos, recuerdos o hilos entre personajes. Puede ser la misma que la de la versión en inglés.
 6. **Publica.** Los escenarios pasan por la moderación automática antes de publicarse.
-7. **Pruébalo como jugador:** en una partida cualquiera (por ejemplo, un escenario ajeno en castellano con tarjetas de personaje), añade el Script, juega una acción y escribe `/comprobar`. Debe decir `LW Affinity Engine (castellano)`, la versión (ahora `1.1.3-es`) y el número de personajes que ha encontrado.
+7. **Pruébalo como jugador:** en una partida cualquiera (por ejemplo, un escenario ajeno en castellano con tarjetas de personaje), añade el Script, juega una acción y escribe `/comprobar`. Debe decir `LW Affinity Engine (castellano)`, la versión (ahora `1.1.4-es`) y el número de personajes que ha encontrado.
 
 ### Al actualizar
 1. Aplica en `es/library.js` el mismo cambio que en `library.js` y ejecuta `node es/test.js`.
-2. Sube el número en `const VERSION = "1.1.3-es"` (línea 8 de `es/library.js`) para que coincida con la versión en inglés, siempre con `-es` al final.
+2. Sube el número en `const VERSION = "1.1.4-es"` (línea 8 de `es/library.js`) para que coincida con la versión en inglés, siempre con `-es` al final.
 3. Pega el nuevo `es/library.js` en el Script y guarda.
 4. Comprueba con `/comprobar` en una partida que la versión ha cambiado.
 

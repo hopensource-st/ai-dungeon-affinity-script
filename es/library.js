@@ -6,7 +6,7 @@
 // (humor, contacto, saltos de tiempo) y los comandos están en castellano; los comandos ingleses siguen valiendo.
 // ============================================================================
 const LW = (() => {
-  const VERSION = "1.1.3-es";                                 // lo muestra /comprobar; súbelo en cada actualización publicada
+  const VERSION = "1.1.4-es";                                 // lo muestra /comprobar; súbelo en cada actualización publicada
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const num = (v, d) => { const n = parseFloat(v); return isNaN(n) ? d : n; };
   const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -72,6 +72,8 @@ const LW = (() => {
       auto_allow: true,
       // un roce amistoso (sin palabras de mood_neg en su frase) sube estos stats en touch_bonus
       touch_stats: "afinidad|atracción|confianza|obsesión", touch_bonus: 0.3,
+      // recuerdos: una entrada de la crónica que nombra a un personaje se guarda como línea m: en sus Notes; la IA recibe las últimas mientras está en escena
+      memories_keep: 8, memories_recent: 2, memories_context: 2,
       thoughts: true, thoughts_show: false, thoughts_interval: 4, thoughts_max: 2, thoughts_keep: 20, thoughts_words: 20, thoughts_context: 2, thoughts_recent: 3,
       chronicle_lines: 3, chronicle_every: 8, chronicle_max: 200, chronicle_stats: "afinidad|atracción|obsesión", chronicle_min: 4,
       clock: true, clock_times: "amanecer|mañana|tarde|anochecer|noche", clock_day: 1, clock_time: "mañana", clock_turns: 0, clock_on_beat: false,
@@ -366,7 +368,7 @@ const LW = (() => {
     return v >= 1 ? d.rate : v;                                  // 1 or more is an old-style starting value, not a rate
   };
   const fresh = (X, ch) => {
-    const r = { s: {}, scenes: 0, last: -1, touched: [], th: [], lastT: -999, tsig: "", bi: 0 };
+    const r = { s: {}, scenes: 0, last: -1, touched: [], th: [], mem: [], lastT: -999, tsig: "", bi: 0 };
     for (const d of activeStats(X, ch)) r.s[d.name] = startOf(d, ch);
     return r;
   };
@@ -377,6 +379,7 @@ const LW = (() => {
     const lines = ["<<LW"];
     for (const d of activeStats(X, ch)) lines.push(d.name + ": " + (r.s[d.name] != null ? r.s[d.name] : startOf(d, ch)).toFixed(1));
     lines.push("escenas: " + r.scenes, "contactos: " + r.touched.length);
+    for (const m of r.mem || []) lines.push("m: " + String(m).replace(/\s+/g, " "));
     for (const t of r.th || []) lines.push("t: " + String(t).replace(/\s+/g, " "));
     lines.push("LW>>");
     return lines.join("\n");
@@ -398,8 +401,10 @@ const LW = (() => {
   };
 
   const adopt = (X, ch, r, blk) => {
-    const act = activeStats(X, ch), th = [];
+    const act = activeStats(X, ch), th = [], mem = [];
     for (const line of blk.split("\n")) {
+      const mm = line.match(/^\s*m\s*:\s*(.+)$/);
+      if (mm) { mem.push(mm[1].trim()); continue; }
       const tm = line.match(/^\s*t\s*:\s*(.+)$/);
       if (tm) { th.push(tm[1].trim()); continue; }
       const m = line.match(/^\s*([\p{L}\p{N}_.]+)\s*:\s*(-?[\d.]+)/u);
@@ -410,6 +415,7 @@ const LW = (() => {
       if (d) r.s[d.name] = clamp(num(m[2], r.s[d.name]), d.min, d.max);
     }
     r.th = thDedupe(th).slice(-X.cfg.s.thoughts_keep);
+    r.mem = mem.slice(-X.cfg.s.memories_keep);
   };
 
   // numbers live in the card's Notes (never sent to the AI); old-style entry blocks are still read
@@ -439,6 +445,7 @@ const LW = (() => {
       } else {
         for (const d of activeStats(X, ch)) if (r.s[d.name] == null) r.s[d.name] = startOf(d, ch);
         if (!r.th) { r.th = []; r.lastT = -999; r.tsig = ""; r.bi = 0; }
+        if (!r.mem) r.mem = [];
         if (blk && L.mirror[ch.id] && blk !== L.mirror[ch.id]) adopt(X, ch, r, blk);
       }
     }
@@ -642,6 +649,16 @@ const LW = (() => {
         const r = L.rel[id];
         if (n >= s.thoughts_context || !r || !r.th.length) continue;
         add(5, X.byId[id].first + " estaba pensando: " + r.th.slice(-Math.max(1, s.thoughts_recent)).map((t) => "\"" + t.slice(0, 120) + "\"").join(" ") + ".");
+        n++;
+      }
+    }
+    if (s.memories_recent > 0 && s.memories_context > 0) {
+      const shown = W.log.slice(-s.chronicle_lines).join(" ");      // ya va como "Hace poco"
+      let n = 0;
+      for (const id of ids) {
+        const r = L.rel[id], mem = ((r && r.mem) || []).filter((m) => !shown.includes(m.replace(/^\([^)]*\) /, "")));
+        if (n >= s.memories_context || !mem.length) continue;
+        add(4, X.byId[id].first + " recuerda: " + mem.slice(-s.memories_recent).map((m) => m.slice(0, 160)).join(" "));
         n++;
       }
     }
@@ -1076,13 +1093,25 @@ const LW = (() => {
     x.c.description = text;
     L.wm = text;
   };
-  const addLog = (X, W, text) => {
+  // noMem: las notas del propio motor (un stat que cruza una etapa) no son recuerdos
+  const addLog = (X, W, text, noMem) => {
     const t = String(text).replace(/\s+/g, " ").replace(/\]/g, ")").trim().slice(0, 220);
     if (!t) return;
     const line = (X.cfg.s.clock ? "[" + dayLabel(X, W) + "] " : "") + t;
     W.log.push(line);
     W.add.push(line);
     while (W.log.length > LOG_KEEP) W.log.shift();
+    if (!noMem) remember(X, (X.cfg.s.clock ? "(" + dayLabel(X, W).replace(/,.*$/, "") + ") " : "") + t);
+  };
+  // cada personaje que nombra la entrada se la guarda como recuerdo propio
+  const remember = (X, m) => {
+    const L = S();
+    for (const ch of X.roster) {
+      const r = L.rel[ch.id];
+      if (!r || lastPos(ch, m) < 0) continue;
+      r.mem = (r.mem || []).filter((o) => o !== m).concat(m).slice(-X.cfg.s.memories_keep);
+      persist(X, L, ch);
+    }
   };
 
   // ---- conditions: used by events and arc beats ------------------------------
@@ -1995,7 +2024,7 @@ const LW = (() => {
         if (snapshot[name] == null || r.s[name] == null) continue;
         let hit = null;
         for (const e of X.cfg.stages[name] || []) if (e[0] >= X.cfg.s.chronicle_min && snapshot[name] < e[0] && r.s[name] >= e[0] && e[1]) hit = e[1];
-        if (hit) addLog(X, W, ch.first + ": ahora " + hit + ".");
+        if (hit) addLog(X, W, ch.first + ": ahora " + hit + ".", true);
       }
     }
     for (const f of found) {
