@@ -2,6 +2,8 @@
 
 A drop-in script that gives every character in your adventure a relationship with the protagonist (affinity, trust, attraction, and obsession for the characters you choose), private thoughts, and memory of what happened, and tells the AI about them each turn. It works in any scenario, yours or someone else's, with no setup: it reads the Character cards that are already there.
 
+**¿Juegas en castellano?** The [`es/`](es/LEEME.md) folder has a Spanish (Spain) edition: same engine, with everything the AI and the player read, the commands and the word detection in Spanish.
+
 Optional extras: a chronicle (story log), a day/time clock, scene pacing, ties and rivalries between characters, timed events, an authored three-act arc, a phrase cleaner, and commands that write new character, faction and place cards for you.
 
 ## Install
