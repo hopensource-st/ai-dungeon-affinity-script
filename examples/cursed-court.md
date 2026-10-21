@@ -75,6 +75,8 @@ bonds: off
 # arc pace: a beat lasts a scene (a time jump, /scene, or scene_len turns), with beat_gap_scenes quiet scenes between beats
 arc_pace: scenes
 beat_gap_scenes: 1
+# clock: only time words in the story move it ("the next morning", "that evening", falling asleep) or /time; a long scene keeps its hour
+clock_turns: 0
 # cleaner (writing any ban line replaces the default list)
 ban: barely above a whisper | very softly
 ban: sent shivers down her spine | made her shiver
