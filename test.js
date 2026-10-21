@@ -374,6 +374,7 @@ assert(/^t: That book was overdue\.$/m.test(storyCards.find((c) => c.id === 201)
 run("input", "/think Mira");
 turn("I wait for Mira.", "Mira polishes a glass.");
 assert(/never script lines[^\]]*The thoughts in braces below are the only exception\.[^\]]*except in the thoughts in braces below\.[^\]]*Begin the reply with \{Mira \(=\): \.\.\.\}[^\]]*Then continue the story\.\]$/.test(G.state.memory.frontMemory), "the thought request comes last, in braces, as the exception: " + G.state.memory.frontMemory);
+assert(/\n(?:Put \{log|Begin the reply with \{Mira)[^\n]*\]$/.test(G.state.memory.frontMemory) && !/\n[^\n]*\n/.test(G.state.memory.frontMemory), "requests for the top of the reply on a last line of their own: " + G.state.memory.frontMemory);
 assert(G.state.lw.w.force.includes("1"), "still asked after a reply with no thought: " + JSON.stringify(G.state.lw.w.force));
 // the thought in braces: stored, out of the story, never taken as a log, even with no closing brace
 G.state.lw.w.pendLog = [""]; G.state.lw.w.asked = true;

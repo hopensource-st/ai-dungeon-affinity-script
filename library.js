@@ -685,22 +685,25 @@ const LW = (() => {
     add(1, style && thx ? style + " The thoughts in braces below are the only exception." : style);
     // the engine keeps the thoughts: the prose shows only what the protagonist can see and hear
     if (s.thoughts && !W.off) add(0, "Never narrate what other characters think; show only what the protagonist sees and hears" + (thx ? ", except in the thoughts in braces below" : "") + ".");
-    // both want the top of the reply: the log line first, the thoughts right after it
-    if (W.pendLog.length) add(1, "Put {log: one past-tense sentence in the third person, naming " + (String(s.protagonist || "").trim() || "the protagonist") + ", summing up what just happened} alone on the first line of the reply.");
-    add(1, thx ? thoughtInstr(X, tp, L).replace(/^Begin the reply with/, W.pendLog.length ? "After that line, write" : "Begin the reply with") : "");
     if (s.contact) {
       const names = L.allow.map((id) => X.byId[id] && X.byId[id].first).filter(Boolean);
       if (names.length) add(0, "The protagonist permits " + names.join(" and ") + " to touch them in this action only.");
       add(0, "Touch: never, unless the protagonist allows it in this very action.");
     }
-    const len = () => parts.reduce((n, x) => n + x.t.length + 1, 2);
+    // both want the top of the reply, so they go last, on a line of their own: the log line first, the thoughts right after it
+    const top = [];
+    if (W.pendLog.length) top.push("Put {log: one past-tense sentence in the third person, naming " + (String(s.protagonist || "").trim() || "the protagonist") + ", summing up what just happened} alone on the first line of the reply.");
+    if (thx) top.push(thoughtInstr(X, tp, L).replace(/^Begin the reply with/, W.pendLog.length ? "After that line, write" : "Begin the reply with"));
+    const topText = top.join(" ");
+    const len = () => parts.reduce((n, x) => n + x.t.length + 1, 2) + (topText ? topText.length + 1 : 0);
     while (len() > s.inject_max) {
       let k = -1;
       for (let i = 0; i < parts.length; i++) if (parts[i].p >= 2 && (k < 0 || parts[i].p >= parts[k].p)) k = i;
       if (k < 0) break;
       parts.splice(k, 1);
     }
-    return parts.length ? "[" + parts.map((x) => x.t).join(" ") + "]" : "";
+    const lines = [parts.map((x) => x.t).join(" "), topText].filter(Boolean);
+    return lines.length ? "[" + lines.join("\n") + "]" : "";
   };
 
   // ---- commands -------------------------------------------------------------
