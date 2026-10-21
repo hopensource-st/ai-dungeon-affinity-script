@@ -1174,8 +1174,10 @@ const LW = (() => {
       return m[1] === "present" ? chs.some((ch) => cx.present.includes(ch.id)) : chs.some((ch) => L.rel[ch.id] && L.rel[ch.id].scenes > 0);
     }
     if ((m = c.match(/^time\s*[:=]\s*(.+)$/))) return m[1].split(/\s+or\s+|\//).map((s) => s.trim()).includes(todName(X, W).toLowerCase());
-    if ((m = c.match(new RegExp("^(action|day|act|scene|met)\\s*" + COND_OP + "\\s*(-?[\\d.]+)$")))) {
-      const v = m[1] === "action" ? cx.turn : m[1] === "day" ? W.day : m[1] === "act" ? W.act : m[1] === "scene" ? W.sc.n : metCount(X, L);
+    // actscene: scenes since this act began, so a fixed beat can wait while the act's bank beats happen
+    if ((m = c.match(new RegExp("^(action|day|actscene|act|scene|met)\\s*" + COND_OP + "\\s*(-?[\\d.]+)$")))) {
+      const v = m[1] === "action" ? cx.turn : m[1] === "day" ? W.day : m[1] === "actscene" ? (W.scu || 0) - (W.actAtS || 0)
+        : m[1] === "act" ? W.act : m[1] === "scene" ? W.sc.n : metCount(X, L);
       return cmp(v, m[2], num(m[3], 0));
     }
     if ((m = c.match(/^any[\s.]+(.+)$/))) {
