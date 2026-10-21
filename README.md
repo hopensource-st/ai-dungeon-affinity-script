@@ -102,7 +102,7 @@ The Config card lists every setting. The most useful:
 - **Clock:** a day and a moment of the day (`clock_times: dawn|morning|afternoon|evening|night`), sent to the AI as `Time: Day 2, evening.` It only moves when the narration or your own action says time passes: "the next morning", "3 days later", "I sleep until dawn", "the sun sets", "that night", "hours later"... Falling asleep or going to bed makes it night, and waking up after the evening or night is the next morning (a nap in the day changes nothing). "That afternoon" said in the evening talks about today, so it never skips a day; a jump that leaves the clock where it was does not close the scene. Dialogue in quotes and memories ("I remember that night") never move it. `/time evening`, `/time +1` and `/day +2` set it by hand. With no jump, it also moves one step every `clock_turns: 12` turns (`0` turns that off); `clock_on_beat: on` adds one step per arc beat.
 - **Touch:** a friendly touch between a character and the protagonist (yours, or the AI's) raises their `touch_stats: affinity|attraction|trust|obsession` by `touch_bonus: 0.3`, once per turn; a sentence with `mood_neg` words makes it rough, and then nothing rises. The count shows as `touched:` in their Notes.
 - `contact: on` enables the touch-consent module (characters may only touch the protagonist when the player writes it).
-- `early_actions: 40` nudges the AI to introduce characters who have not appeared yet during the first 40 actions.
+- `early_actions: 40` nudges the AI to introduce characters who have not appeared yet during the first 40 actions (off by default, `0`).
 
 ### Ties between characters
 

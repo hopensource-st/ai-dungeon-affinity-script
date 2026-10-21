@@ -287,7 +287,7 @@ Playing it yourself, just write it: `Fiona's greatest talent is the fire dance.`
 
 ## Character cards (Type: Character)
 
-The first card is the court itself, a collective character (`[cfg crowd]`): it has stats and stages, and every public moment raises its obsession, but it never thinks, is never picked as one person for a twist, and never pairs for ties or tension. Its triggers avoid the bare word "court", which is in every sentence. The card title is the character's name, and every trigger also counts as a name (so `the King` already points at Aldric; `alias:` is only for names that are not triggers). Each character thinks every `thoughts:N` turns while in the scene, up to two characters per turn; their latest thoughts are kept in their Notes, under their stats.
+The first card is the court itself, a collective character (`[cfg crowd]`): it has stats and stages, and every public moment raises its obsession, but it never thinks, is never picked as one person for a twist, and never pairs for ties or tension. Its triggers avoid the bare word "court", which is in every sentence. The card title is the character's name, and every trigger also counts as a name (so `the King` already points at Aldric; `alias:` is only for names that are not triggers). Each character thinks every `thoughts:N` turns while in the scene, one character per turn (`thoughts_max: 1`); their latest thoughts are kept in their Notes, under their stats.
 
 ```
 Triggers: the courtiers, the nobles, the crowd, the whole court

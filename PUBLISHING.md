@@ -69,6 +69,11 @@ WHAT'S NEW IN 1.1.5
 • Thoughts: one character thinks per turn, in a short line, stored and sent whole, never cut in the middle of a word. A thought is kept even when the AI gets the name wrong ("She", "Lady Mira").
 • Chronicle lines are asked for short, so they read like a log, not a recap.
 • Numbers you edit by hand in a card's Notes are kept even if you deleted the block's last line by mistake.
+• Thoughts are written in braces, like the chronicle's logs, so they never read as prose, and more of the AI's slips are caught: narration under a thought tag stays in the story, and dialogue written like a script stays dialogue.
+• A style line asks the AI for literary prose, with dialogue woven into the narration (style: in LW Config; style: off sends nothing).
+• The arc moves by scenes, not actions: each beat gets a whole scene to happen, with a quiet scene between beats, and each act lasts at least 4 scenes (act_scenes). The chronicle records what really happened, never the plan.
+• The clock understands sleep: falling asleep makes it night, waking after the evening is the next morning, and "that afternoon" never skips a day.
+• Name your character with protagonist: Name in LW Config, and the chronicle always calls them by it.
 • For scenario authors: beats, events and twists can raise everyone's stats with adds (who.fear+2 for the twist's own character); a stat can fade while another holds (eases), or move against the mood with a negative rate, like fear; [cfg crowd] makes a collective character such as a royal court; twists can pick by a stat (who: obsession>=5); actscene>=N lets a beat wait. See the README.
 
 WHAT'S NEW IN 1.1.4
