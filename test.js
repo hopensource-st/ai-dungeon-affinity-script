@@ -451,6 +451,14 @@ assert(line && ctxOut.includes(line) && ctxOut.length < ctxIn.length + 20, "line
 assert(/^AI INSTRUCTIONS\n/.test(ctxOut) && /\nI look at Selene\.$/.test(ctxOut), "instructions and latest action kept:\n" + ctxOut);
 assert(/another script/i.test(run("input", "/check").text), "/check reports the takeover");
 
+// witnesses: Tobin is in the scene, so he remembers the log too; Mira thinks that turn, so her memory carries her view of it
+run("input", "/think Mira");
+G.state.lw.w.pendLog = [""];
+turn("I sit with Mira and Tobin.", "{log: The protagonist gave Mira a silver ring.}\n{Mira (+): Nobody ever gave me anything this fine.}\nTobin looks away.");
+assert(/^m: [^\n]*gave Mira a silver ring — «Nobody ever gave me anything this fine\.»$/m.test(storyCards[0].description), "Mira's view of the event:\n" + storyCards[0].description);
+assert(/^m: [^\n]*gave Mira a silver ring\.?$/m.test(storyCards[1].description), "Tobin witnessed it:\n" + storyCards[1].description);
+G.state.lw.w.force = [];
+
 // a block whose LW>> was deleted by hand: the edited number is adopted and the block closed again
 storyCards[0].description = storyCards[0].description.replace("\nLW>>", "").replace(/^affinity: [\d.]+$/m, "affinity: 3.0");
 turn("I wait.", "Mira hums.");

@@ -667,7 +667,7 @@ const LW = (() => {
         // ponytail: counted once per turn it is sent, so a long scene about it counts many times
         const mr = r.mr || (r.mr = {});
         for (const p of pick) if (p.hits) mr[p.m] = (mr[p.m] || 0) + 1;
-        add(4, X.byId[id].first + " remembers: " + pick.map((p) => clip(p.m, 200)).join(" "));
+        add(4, X.byId[id].first + " remembers: " + pick.map((p) => clip(p.m, 280)).join(" "));
         n++;
       }
     }
@@ -1127,12 +1127,16 @@ const LW = (() => {
     while (W.log.length > LOG_KEEP) W.log.shift();
     if (!noMem) remember(X, (X.cfg.s.clock ? "(" + dayLabel(X, W).replace(/,.*$/, "") + ") " : "") + t);
   };
-  // every character the entry names keeps it as a memory of their own
+  // every character the entry names keeps it as a memory of their own, and so does everyone in the scene (a witness)
+  // when the entry is about people (it names a character or the protagonist)
   const remember = (X, m) => {
-    const L = S();
+    const L = S(), hero = String(X.cfg.s.protagonist || "").trim();
+    const about = X.roster.some((c) => lastPos(c, m) >= 0) || PROTAG.test(m) || (!!hero && new RegExp("\\b" + esc(hero) + "\\b", "i").test(m));
+    L.memNow = L.memNow || {};
     for (const ch of X.roster) {
       const r = L.rel[ch.id];
-      if (!r || lastPos(ch, m) < 0) continue;
+      if (!r || (lastPos(ch, m) < 0 && !(about && (L.present || []).includes(ch.id)))) continue;
+      L.memNow[ch.id] = m;                                         // this turn's memory: a thought now becomes their view of it
       // a memory that says (almost) the same as an older one replaces it, and keeps its recall count
       const mr = r.mr || (r.mr = {}), bare = (x) => x.replace(/^\([^)]*\) /, "");
       const same = (r.mem || []).filter((o) => o === m || thSame(bare(o), bare(m)));
@@ -1862,6 +1866,7 @@ const LW = (() => {
     }
     const recent = histText + " " + rest;
     const ids = presentIds(X, recent.replace(MARK, ""), X.cfg.s.max_present);
+    L.present = ids;                                                // the witnesses of anything logged this turn
     let block = "";
     // autostats: on the first action the AI designs this story's stats; the player's action stays in the story
     const designing = !w && !pc && !!X.cfg.s.autostats && !L.statsDone;
@@ -2204,7 +2209,17 @@ const LW = (() => {
       while (r.th.length > X.cfg.s.thoughts_keep) r.th.shift();
       r.lastT = turn;
       r.tsig = thSig(X, f.ch, r);
+      // a thought in the turn something was logged is this character's own view of it: "m: (Day 3) ... — «...»"
+      // ponytail: a Retry after a /log loses the link (the log was written by the Input hook, which a Retry skips)
+      const m = (L.memNow || {})[f.ch.id], i = m ? (r.mem || []).indexOf(m) : -1;
+      if (i >= 0 && !/ — «/.test(m)) {
+        const v = m.replace(/[.\s]+$/, "") + " — «" + f.text + "»";
+        r.mem[i] = v;
+        if (r.mr && r.mr[m]) { r.mr[v] = r.mr[m]; delete r.mr[m]; }
+        persist(X, L, f.ch);
+      }
     }
+    L.memNow = {};
 
     // pairs sharing a scene: rivals for the protagonist, a quarrel or a kind moment between them, a tie drawn when they first meet
     const ts = X.cfg.s;
