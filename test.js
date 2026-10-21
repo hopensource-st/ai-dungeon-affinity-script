@@ -492,6 +492,23 @@ for (let i = 0; i < 12; i++) {
 }
 assert(whos.size === 2 && whos.has("Mira") && whos.has("Tobin"), "obsession pick, at random among the obsessed: " + [...whos]);
 G.state.lw.w.tw = null;
+
+// a crowd ([cfg crowd]) takes adds like anyone there, but is never picked for a twist about one person
+storyCards.push({ id: 301, keys: "the crowd, the courtiers", entry: "The courtiers of the inn's great hall.", type: "character", title: "The Crowd", description: "[cfg crowd thoughts:0]" });
+evCard.description += "\nevent: toast | public | stages: everyone in the hall raises a glass to the protagonist | hold 1 | adds: affinity+2";
+turn("I greet Mira and the crowd.", "Mira and the crowd cheer.");
+const crowdId = Object.keys(G.state.lw.rel).find((id) => G.state.lw.rel[id] && storyCards.some((c) => String(c.id) === id && c.title === "The Crowd"));
+assert(crowdId, "the crowd is tracked");
+const aM = G.state.lw.rel["1"].s.affinity, aC = G.state.lw.rel[crowdId].s.affinity;
+turn("/event toast", "Mira and the crowd raise their glasses.");
+for (let i = 0; i < 3; i++) turn("I wait.", "Mira and the crowd drink.");
+assert(G.state.lw.rel["1"].s.affinity >= Math.min(10, aM + 1.9) && G.state.lw.rel[crowdId].s.affinity >= aC + 1.9, "adds reach everyone there: Mira " + aM + " -> " + G.state.lw.rel["1"].s.affinity + ", crowd " + aC + " -> " + G.state.lw.rel[crowdId].s.affinity);
+G.state.lw.rel[crowdId].s.obsession = 9;
+const whos2 = new Set();
+for (let i = 0; i < 10; i++) { G.state.lw.w.tw = null; turn("/twist shrine", "Nothing."); whos2.add(G.state.lw.w.tw && G.state.lw.w.tw.who); }
+assert(!whos2.has("The Crowd") && whos2.size >= 1, "a crowd is never a twist's one person: " + [...whos2]);
+G.state.lw.w.tw = null;
+storyCards.splice(storyCards.findIndex((c) => c.id === 301), 1);
 evCard.description = evBefore;
 
 // a block whose LW>> was deleted by hand: the edited number is adopted and the block closed again

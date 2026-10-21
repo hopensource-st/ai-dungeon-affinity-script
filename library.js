@@ -634,6 +634,7 @@ const LW = (() => {
     for (let i = 0; i < ids.length; i++) {
       for (let j = i + 1; j < ids.length; j++) {
         if (np >= s.max_pairs) break;
+        if (isCrowd(X.byId[ids[i]]) || isCrowd(X.byId[ids[j]])) continue;
         const key = pk(ids[i], ids[j]);
         const tie = X.ties[key];
         const ts = stageText(X, "tension", L.tension[key] || 0);
@@ -676,7 +677,7 @@ const LW = (() => {
       add(3, "Recently: " + W.log.slice(-s.chronicle_lines).map((l) => l.replace(/^\[(Day \d+)[^\]]*\]\s*/, "($1) ").replace(/[[\]]/g, "")).map((l) => clip(l, 200)).join(" "));
     if (info.actionCount < s.early_actions) {
       const quiet = X.roster
-        .filter((c) => !ids.includes(c.id) && !c.cfg.flags.noearly)
+        .filter((c) => !ids.includes(c.id) && !c.cfg.flags.noearly && !isCrowd(c))
         .sort((a2, b2) => ((L.rel[a2.id] || {}).scenes || 0) - ((L.rel[b2.id] || {}).scenes || 0))
         .slice(0, 2).map((c) => c.first);
       if (quiet.length) add(5, "Soon give " + andList(quiet) + " a moment with the protagonist.");
@@ -896,7 +897,7 @@ const LW = (() => {
   };
   const cardsOf = (type) => (storyCards || []).filter((c) => c && String(c.type || "").toLowerCase() === type);
   const cardText = (c) => String(c.entry || "") + "\n" + String(c.description || "");
-  const FIELD = /^(when|stages|hold|sets|log|guide|who)\s*:\s*/i;
+  const FIELD = /^(when|stages|hold|sets|adds|log|guide|who)\s*:\s*/i;
   const parseFields = (v) => {
     const pos = [], f = {};
     for (const part of String(v).split("|").map((s) => s.trim())) {
@@ -907,6 +908,9 @@ const LW = (() => {
     return { pos, f };
   };
   const setList = (v) => String(v || "").split(",").map(slug).filter(Boolean);
+  // adds: obsession+1.5, attraction+1 (what a beat, event or twist does to everyone who was there)
+  const addList = (v) => String(v || "").split(",").map((x) => x.trim().match(/^(\w+)\s*([+-]\s*[\d.]+)$/)).filter(Boolean)
+    .map((m) => ({ stat: m[1].toLowerCase(), n: num(m[2].replace(/\s/g, ""), 0) }));
 
   const newW = () => ({
     flags: {}, fired: {}, log: [], day: 1, tod: 0, inited: false, ct: 0, sc: { n: 1, t: 0 }, ev: {}, act: 1, bt: null,
@@ -928,7 +932,7 @@ const LW = (() => {
       const kind = String(pos[1] || "").toLowerCase();
       out.push({ id, kind: ["public", "secret", "random"].includes(kind) ? kind : "public", when: f.when || "",
         stages: (f.stages || "").split(">>").map((t) => t.trim()).filter(Boolean), hold: num(f.hold, cfg.s.event_hold),
-        sets: setList(f.sets), log: f.log || "" });
+        sets: setList(f.sets), adds: addList(f.adds), log: f.log || "" });
     }
     return out;
   };
@@ -944,7 +948,7 @@ const LW = (() => {
       const id = slug(pos[0]), stages = (f.stages || "").split(">>").map((t) => t.trim()).filter(Boolean);
       if (!id || !stages.length) continue;
       out[id] = { id, who: String(f.who || "").toLowerCase(), when: f.when || "", weight: Math.max(0, num(f.weight, 1)),
-        hold: num(f.hold, cfg.s.twist_hold), stages, sets: setList(f.sets), log: f.log || "" };
+        hold: num(f.hold, cfg.s.twist_hold), stages, sets: setList(f.sets), adds: addList(f.adds), log: f.log || "" };
     }
     return Object.keys(out).map((k) => out[k]);
   };
@@ -976,7 +980,7 @@ const LW = (() => {
         const n = parseInt(pos[0], 10), title = pos[2];
         if (!(n > 0) || !title) continue;
         A.beats.push({ act: n, kind: /^bank$/i.test(pos[1]) ? "bank" : "fixed", title, id: slug(title), when: f.when || "",
-          guide: f.guide || "", sets: setList(f.sets), log: f.log || "", hold: f.hold ? num(f.hold, A.hold) : 0 });
+          guide: f.guide || "", sets: setList(f.sets), adds: addList(f.adds), log: f.log || "", hold: f.hold ? num(f.hold, A.hold) : 0 });
       }
     }
     A.maxAct = Math.max(0, ...Object.keys(A.acts).map(Number), ...A.beats.map((b) => b.act));
@@ -1136,7 +1140,7 @@ const LW = (() => {
     L.memNow = L.memNow || {};
     for (const ch of X.roster) {
       const r = L.rel[ch.id];
-      if (!r || (lastPos(ch, m) < 0 && !(about && (L.present || []).includes(ch.id)))) continue;
+      if (!r || isCrowd(ch) || (lastPos(ch, m) < 0 && !(about && (L.present || []).includes(ch.id)))) continue;
       L.memNow[ch.id] = m;                                         // this turn's memory: a thought now becomes their view of it
       // a memory that says (almost) the same as an older one replaces it, and keeps its recall count
       const mr = r.mr || (r.mr = {}), bare = (x) => x.replace(/^\([^)]*\) /, "");
@@ -1157,7 +1161,10 @@ const LW = (() => {
   // ---- conditions: used by events and arc beats ------------------------------
   const COND_OP = "(>=|<=|>|<|=)";
   const statVal = (L, ch, name) => (L.rel[ch.id] && L.rel[ch.id].s[name] != null ? L.rel[ch.id].s[name] : null);
-  const metCount = (X, L) => X.roster.filter((c) => L.rel[c.id] && L.rel[c.id].scenes > 0).length;
+  // [cfg crowd]: a collective character (the court, a crowd): it has stats and stages and takes adds, but it is never
+  // counted as someone met, picked for a twist, matched by "any", paired for ties and tension, or given memories
+  const isCrowd = (ch) => !!(ch && ch.cfg.flags.crowd);
+  const metCount = (X, L) => X.roster.filter((c) => !isCrowd(c) && L.rel[c.id] && L.rel[c.id].scenes > 0).length;
   const namesOf = (X, v) => String(v).split(/\s+or\s+|\//i).map((n) => findChar(X, n)).filter(Boolean);
   // returns true, false, or null when the condition cannot be read
   const evalOne = (X, L, cx, raw) => {
@@ -1186,7 +1193,7 @@ const LW = (() => {
       let t;
       while ((t = re.exec(m[1])) !== null) toks.push({ stat: t[1], op: t[2], val: num(t[3], 0) });
       if (!toks.length || toks.some((k) => !X.cfg.stats.some((d) => d.name === k.stat))) return null;
-      return X.roster.some((ch) => toks.every((k) => { const v = statVal(L, ch, k.stat); return v != null && cmp(v, k.op, k.val); }));
+      return X.roster.some((ch) => !isCrowd(ch) && toks.every((k) => { const v = statVal(L, ch, k.stat); return v != null && cmp(v, k.op, k.val); }));
     }
     if ((m = c.match(new RegExp("^([a-z][\\w' -]*?)\\.(\\w+)\\s*" + COND_OP + "\\s*(-?[\\d.]+)$")))) {
       const ch = findChar(X, m[1]);
@@ -1212,9 +1219,24 @@ const LW = (() => {
     return cx.bad;
   };
 
+  const applyAdds = (X, L, adds, ids) => {
+    if (!adds || !adds.length) return;
+    for (const id of ids || []) {
+      const ch = X.byId[id], r = L.rel[id];
+      if (!ch || !r) continue;
+      for (const a of adds) {
+        const d = activeStats(X, ch).find((x) => x.name === a.stat);    // romance:no characters get no attraction
+        if (d && r.s[d.name] != null) r.s[d.name] = clamp(r.s[d.name] + a.n, d.min, d.max);
+      }
+      persist(X, L, ch);
+    }
+  };
+  const seenAdd = (o, ids) => { if (o) o.seen = (o.seen || []).concat(ids.filter((id) => !(o.seen || []).includes(id))); };
+
   // ---- events ------------------------------------------------------------------
   const fireEvent = (X, L, e, cx) => {
     const W = L.w;
+    applyAdds(X, L, e.adds, ((W.ev[e.id] || {}).seen || []).concat(cx.present));
     delete W.ev[e.id];
     W.fired[e.id] = cx.turn;
     for (const f of e.sets) W.flags[f] = 1;
@@ -1259,6 +1281,7 @@ const LW = (() => {
   };
   const fireBeat = (X, L, b, cx) => {
     const W = L.w;
+    applyAdds(X, L, b.adds, (W.bt && W.bt.id === b.id && W.bt.seen) || cx.present);
     W.fired[b.id] = cx.turn; W.bt = null; W.btEnd = cx.turn; W.btEndS = W.scu || 0;
     for (const f of b.sets) W.flags[f] = 1;
     // the AI is asked to log what really happened: the beat's own text may never have made it into the story
@@ -1318,12 +1341,12 @@ const LW = (() => {
     // who: obsession>=5 picks at random among everyone already met (here or not) whose stat holds
     const st = kind.match(/^(\w+)\s*(>=|<=|>|<)\s*(-?[\d.]+)$/);
     if (st) {
-      const met = X.roster.filter((c) => L.rel[c.id] && L.rel[c.id].scenes > 0 && L.rel[c.id].s[st[1]] != null && cmp(L.rel[c.id].s[st[1]], st[2], num(st[3], 0)));
+      const met = X.roster.filter((c) => !isCrowd(c) && L.rel[c.id] && L.rel[c.id].scenes > 0 && L.rel[c.id].s[st[1]] != null && cmp(L.rel[c.id].s[st[1]], st[2], num(st[3], 0)));
       return met.length ? met[Math.floor(R() * met.length)].first : null;
     }
     const pool = kind === "absent"
-      ? X.roster.filter((c) => !cx.present.includes(c.id) && L.rel[c.id] && L.rel[c.id].scenes > 0)
-      : cx.present.map((id) => X.byId[id]).filter((c) => c && (kind === "low" ? feel(X, L, c) <= 0.35 : kind === "high" ? feel(X, L, c) >= 0.6 : true));
+      ? X.roster.filter((c) => !isCrowd(c) && !cx.present.includes(c.id) && L.rel[c.id] && L.rel[c.id].scenes > 0)
+      : cx.present.map((id) => X.byId[id]).filter((c) => c && !isCrowd(c) && (kind === "low" ? feel(X, L, c) <= 0.35 : kind === "high" ? feel(X, L, c) >= 0.6 : true));
     return pool.length ? pool[Math.floor(R() * pool.length)].first : null;
   };
   const twistFill = (t, who) => String(t).replace(/\{who\}/gi, who || "someone").replace(/[.\s]+$/, "");
@@ -1356,6 +1379,7 @@ const LW = (() => {
       W.tw.st++; W.tw.at = cx.turn;
       if (W.tw.st <= t.stages.length) return;
       for (const f of t.sets) W.flags[f] = 1;
+      applyAdds(X, L, t.adds, W.tw.seen || cx.present);
       W.pendLog.push("");     // logged by the AI, as it really happened (the planned text may not have)
       W.tw = null; W.twEnd = cx.turn;
       return;
@@ -2242,6 +2266,7 @@ const LW = (() => {
     for (let i = 0; i < ids.length; i++) {
       for (let j = i + 1; j < ids.length; j++) {
         const A = X.byId[ids[i]], B = X.byId[ids[j]], key = pk(A.id, B.id);
+        if (isCrowd(A) || isCrowd(B)) continue;
         const va = L.rel[A.id].s[ts.tension_stat], vb = L.rel[B.id].s[ts.tension_stat];
         // rivals: once per scene for each pair (kept in W so a retry restores it)
         W.tsk = W.tsk || {};
@@ -2275,6 +2300,8 @@ const LW = (() => {
     eventStep(X, L, cx);
     arcStep(X, L, cx);
     twistStep(X, L, cx);
+    // who was there while each one runs: its adds go to all of them when it ends
+    seenAdd(W.bt, ids); seenAdd(W.tw, ids); for (const k of Object.keys(W.ev)) seenAdd(W.ev[k], ids);
 
     body = cleanText(X, body);
 
