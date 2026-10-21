@@ -382,6 +382,8 @@ const LW = (() => {
     return lines.join("\n");
   };
 
+  // a long text cut at a word, never in the middle of one
+  const clip = (t, n) => { t = String(t); if (t.length <= n) return t; const c = t.slice(0, n); return c.slice(0, c.lastIndexOf(" ") > n / 2 ? c.lastIndexOf(" ") : n).replace(/[\s,;:]+$/, "") + "…"; };
   // thoughts that say (almost) the same thing count as repeats
   const thWords = (t) => new Set(String(t).toLowerCase().replace(/[^\p{L}\p{N} ]+/gu, " ").split(/\s+/).filter((w) => w.length > 2));
   const thSame = (a, b) => {
@@ -647,7 +649,7 @@ const LW = (() => {
       for (const id of ids) {
         const r = L.rel[id];
         if (n >= s.thoughts_context || !r || !r.th.length) continue;
-        add(5, X.byId[id].first + "'s private thoughts (never narrate them): " + r.th.slice(-Math.max(1, s.thoughts_recent)).map((t) => "\"" + t.slice(0, 120) + "\"").join(" ") + ".");
+        add(5, X.byId[id].first + "'s private thoughts (never narrate them): " + r.th.slice(-Math.max(1, s.thoughts_recent)).map((t) => "\"" + clip(t, 200) + "\"").join(" ") + ".");
         n++;
       }
     }
@@ -665,12 +667,12 @@ const LW = (() => {
         // ponytail: counted once per turn it is sent, so a long scene about it counts many times
         const mr = r.mr || (r.mr = {});
         for (const p of pick) if (p.hits) mr[p.m] = (mr[p.m] || 0) + 1;
-        add(4, X.byId[id].first + " remembers: " + pick.map((p) => p.m.slice(0, 160)).join(" "));
+        add(4, X.byId[id].first + " remembers: " + pick.map((p) => clip(p.m, 200)).join(" "));
         n++;
       }
     }
     if (W.log.length && s.chronicle_lines > 0)
-      add(3, "Recently: " + W.log.slice(-s.chronicle_lines).map((l) => l.replace(/^\[(Day \d+)[^\]]*\]\s*/, "($1) ").replace(/[[\]]/g, "").slice(0, 160)).join(" "));
+      add(3, "Recently: " + W.log.slice(-s.chronicle_lines).map((l) => l.replace(/^\[(Day \d+)[^\]]*\]\s*/, "($1) ").replace(/[[\]]/g, "")).map((l) => clip(l, 200)).join(" "));
     if (info.actionCount < s.early_actions) {
       const quiet = X.roster
         .filter((c) => !ids.includes(c.id) && !c.cfg.flags.noearly)
@@ -1114,7 +1116,8 @@ const LW = (() => {
   };
   // noMem: the engine's own notes (a stat crossing a stage) are not memories
   const addLog = (X, W, text, noMem) => {
-    let t = String(text).replace(/\s+/g, " ").replace(/\]/g, ")").trim().slice(0, 220);
+    let t = String(text).replace(/\s+/g, " ").replace(/\]/g, ")").trim();
+    t = clip(t, 260);
     if (!t) return;
     const hero = String(X.cfg.s.protagonist || "").trim();
     if (hero) t = t.replace(/\b[Tt]he protagonist\b/g, hero);     // one name for the protagonist in every entry
@@ -1130,9 +1133,12 @@ const LW = (() => {
     for (const ch of X.roster) {
       const r = L.rel[ch.id];
       if (!r || lastPos(ch, m) < 0) continue;
-      r.mem = (r.mem || []).filter((o) => o !== m).concat(m);
+      // a memory that says (almost) the same as an older one replaces it, and keeps its recall count
+      const mr = r.mr || (r.mr = {}), bare = (x) => x.replace(/^\([^)]*\) /, "");
+      const same = (r.mem || []).filter((o) => o === m || thSame(bare(o), bare(m)));
+      for (const o of same) { if (o !== m) mr[m] = Math.max(mr[m] || 0, mr[o] || 0); if (o !== m) delete mr[o]; }
+      r.mem = (r.mem || []).filter((o) => !same.includes(o)).concat(m);
       // full: the memory recalled least often goes (the oldest of those), never the new one
-      const mr = r.mr || (r.mr = {});
       while (r.mem.length > Math.max(1, X.cfg.s.memories_keep)) {
         let k = 0;
         for (let i = 1; i < r.mem.length - 1; i++) if ((mr[r.mem[i]] || 0) < (mr[r.mem[k]] || 0)) k = i;
@@ -1988,7 +1994,8 @@ const LW = (() => {
         .replace(/\bthe protagonist (have|are|were)\b/g, (m, w) => "the protagonist " + { have: "has", are: "is", were: "was" }[w])
         .replace(/^the/, "The");
       if (t.split(/\s+/).length < 4) return false;
-      addLog(X, W, t);
+      // a log that says (almost) what one of the last LOG_KEEP said is not written again (it counts as the log asked for)
+      if (!W.log.some((l) => thSame(l.replace(/^\[[^\]]*\]\s*/, ""), t))) addLog(X, W, t);
       return true;
     };
     // markers the AI may write: {flag:x} {event:x} {beat} {log:text}

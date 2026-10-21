@@ -428,8 +428,14 @@ for (const l of ["Mira sang for the guests.", "Mira swept the cellar.", "The mil
 turn("I hand Mira a new lamp.", "Mira hums.");
 assert(/Mira remembers: [^\]]*broken lamp/.test(G.state.memory.frontMemory) && !/Mira sang/.test(G.state.memory.frontMemory), "cue word brings back the lamp: " + G.state.memory.frontMemory);
 // salience: once Notes are full, a recalled memory outlives older and newer ones never recalled
-for (let i = 0; i < 9; i++) turn("/log Mira counted coins, round " + i + ".", "Nothing.");
+for (const l of ["counted the coins", "fed the cat", "mended a curtain", "baked bread", "hung lanterns", "scrubbed the floor", "wrote a letter", "tuned a lute", "patched a sack"]) turn("/log Mira " + l + ".", "Nothing.");
 assert(/^m: [^\n]*broken lamp/m.test(storyCards[0].description) && !/^m: [^\n]*cellar/m.test(storyCards[0].description), "recalled memory kept:\n" + storyCards[0].description);
+// a memory that says almost the same as an older one replaces it; so does a repeated log the AI writes
+turn("/log Mira patched an old sack.", "Nothing.");
+assert((storyCards[0].description.match(/^m: [^\n]*sack/gm) || []).length === 1 && /^m: [^\n]*patched an old sack/m.test(storyCards[0].description), "repeated memory replaced:\n" + storyCards[0].description);
+G.state.lw.w.pendLog = [""]; G.state.lw.w.asked = true;
+turn("I wait.", "{log: Mira patched a sack by the fire.}\nMira hums.");
+assert(!G.state.lw.w.log.some((l) => /by the fire/.test(l)), "a repeated AI log is not written: " + G.state.lw.w.log.slice(-3));
 
 // another script overwrites frontMemory and the context is full: the line goes into the context text, cutting the oldest story
 G.info.actionCount++;
