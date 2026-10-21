@@ -459,6 +459,18 @@ assert(/^m: [^\n]*gave Mira a silver ring — «Nobody ever gave me anything thi
 assert(/^m: [^\n]*gave Mira a silver ring\.?$/m.test(storyCards[1].description), "Tobin witnessed it:\n" + storyCards[1].description);
 G.state.lw.w.force = [];
 
+// the AI drops the braces: the log line and the first-person thought on top are recovered, and leave the story
+run("input", "/think Mira");
+G.state.lw.w.pendLog = [""];
+const bareTop = turn("I sit with Mira.", "Mira pours the protagonist a cup of wine by the fire.\nShe knows I listen.\nThe fire crackles.");
+assert(bareTop === "The fire crackles.", "bare log and thought out of the story: " + bareTop);
+assert(G.state.lw.w.log.some((l) => /Mira pours the protagonist a cup of wine/.test(l)), "bare log kept: " + G.state.lw.w.log.slice(-1));
+assert(/She knows I listen/.test(storyCards[0].description), "bare thought kept:\n" + storyCards[0].description);
+G.state.lw.w.force = [];
+// a line of dialogue on top is prose, even with a thought asked for
+const plain = turn("I wait.", "\"I am here,\" Mira says.\nMira waves.");
+assert(plain === "\"I am here,\" Mira says.\nMira waves.", "dialogue kept: " + plain);
+
 // a negative rate runs against the mood: dread rises when Mira is cruel to the protagonist, falls when she is kind
 const dreadCfg = storyCards.find((c) => c.type === "config"), cfgBefore = dreadCfg.description;
 dreadCfg.description += "\nstat: dread | auto | 0-10 | start 3 | rate -0.5";

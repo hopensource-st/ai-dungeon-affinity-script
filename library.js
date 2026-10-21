@@ -696,7 +696,7 @@ const LW = (() => {
     }
     // both want the top of the reply, so they go last, on a line of their own: the log line first, the thoughts right after it
     const top = [];
-    if (W.pendLog.length) top.push("Put {log: one short past-tense sentence, under " + s.log_words + " words, in the third person, naming " + (String(s.protagonist || "").trim() || "the protagonist") + ", summing up what just happened} alone on the first line of the reply.");
+    if (W.pendLog.length) top.push("Put {log: one short past-tense sentence, under " + s.log_words + " words, in the third person, naming " + (String(s.protagonist || "").trim() || "the protagonist") + ", summing up what just happened} alone on the first line of the reply, braces included.");
     if (thx) top.push(thoughtInstr(X, tp, L).replace(/^Begin the reply with/, W.pendLog.length ? "After that line, write" : "Begin the reply with"));
     const topText = top.join(" ");
     const len = () => parts.reduce((n, x) => n + x.t.length + 1, 2) + (topText ? topText.length + 1 : 0);
@@ -1432,7 +1432,7 @@ const LW = (() => {
     return "Begin the reply with " + names.map((n) => "{" + n + (mood ? " (=)" : "") + ": ...}").join(" ") +
       ": one short new first-person thought each, under " + X.cfg.s.thoughts_words + " words, naming people, not pronouns" +
       (mood ? "; in the parentheses put + if warmer toward the protagonist, - if cooler, = if unchanged" : "") +
-      (tones.length ? "; tone: " + tones.join(", ") : "") + ". The braces are not part of the story. Then continue the story.";
+      (tones.length ? "; tone: " + tones.join(", ") : "") + ". Always write the braces: they keep it out of the story. Then continue the story.";
   };
 
   // ---- mood: was this scene good or bad for the character? ----------------------
@@ -2050,6 +2050,21 @@ const LW = (() => {
       else if (kind === "beat" && W.bt) W.bt.at = -1000;
       return "";
     };
+    // the AI sometimes drops the braces: "Fiona deflects...\nShe knows I listen.\nThe King..." opens the reply with the
+    // log and the thought as bare lines. A short first-person line (no quotes) among the first two is the thought asked for,
+    // and a line above it the log; the braces go back on so the steps below handle them
+    // ponytail: only the first thought asked for, and only with that first-person anchor (a bare log alone stays prose)
+    const ask0 = L.applied.fresh && W.thAsk && W.thAsk[0] && X.byId[W.thAsk[0]];
+    if (ask0 && !/^\s*[^\n]*\{/.test(body)) {
+      const lines = body.replace(/^\s+/, "").split("\n");
+      const k = [0, 1].find((i) => lines[i] && lines.length > i + 1 && !/["“”«»{}]/.test(lines[i]) &&
+        /\b(?:I|me|my|I'm)\b/.test(lines[i]) && lines[i].trim().split(/\s+/).length <= X.cfg.s.thoughts_words * 1.5);
+      if (k !== undefined && (k === 0 || (W.asked && !/["“”«»{}]/.test(lines[0])))) {
+        lines[k] = "{" + ask0.first + ": " + lines[k].trim() + "}";
+        if (k === 1) lines[0] = "{log: " + lines[0].trim() + "}";
+        body = lines.join("\n");
+      }
+    }
     // the AI sometimes forgets the closing brace: then the marker runs to the end of its line
     body = body.replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}]*))?\}/gi, onMark)
       .replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}\n]*))?$/gim, onMark)
