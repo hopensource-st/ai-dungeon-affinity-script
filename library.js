@@ -587,7 +587,11 @@ const LW = (() => {
   };
 
   // the short bracketed line the AI receives each turn; low-priority parts drop first when it is too long
-  const buildInject = (X, L, ids, tp) => {
+  // cue words: a memory that shares words with the scene comes back, however old (character names don't count)
+  // ponytail: words of 4+ letters and a stop list, no stemming ("sword" and "swords" are different cues)
+  const CUE_STOP = /^(?:about|after|again|also|back|been|before|being|could|does|down|each|even|from|have|here|into|just|like|made|make|more|most|much|only|other|over|said|some|than|that|their|them|then|there|these|they|this|those|very|want|were|what|when|where|which|while|will|with|would|your|should|protagonist)$/;
+  const cues = (X, t) => new Set((String(t).toLowerCase().replace(/['’]s\b/g, "").match(/[a-z]{4,}/g) || []).filter((w) => !CUE_STOP.test(w) && !findChar(X, w)));
+  const buildInject = (X, L, ids, tp, recent) => {
     const W = L.w, s = X.cfg.s, parts = [];
     const add = (p, t) => { if (t) parts.push({ p, t }); };
     if (s.clock) add(2, "Time: " + dayLabel(X, W) + ".");
@@ -647,11 +651,15 @@ const LW = (() => {
     }
     if (s.memories_recent > 0 && s.memories_context > 0) {
       const shown = W.log.slice(-s.chronicle_lines).join(" ");      // already sent as "Recently"
+      const scene = cues(X, recent);
       let n = 0;
       for (const id of ids) {
         const r = L.rel[id], mem = ((r && r.mem) || []).filter((m) => !shown.includes(m.replace(/^\([^)]*\) /, "")));
         if (n >= s.memories_context || !mem.length) continue;
-        add(4, X.byId[id].first + " remembers: " + mem.slice(-s.memories_recent).map((m) => m.slice(0, 160)).join(" "));
+        // the ones that share the most words with the scene, then the newest; told in the order they happened
+        const pick = mem.map((m, i) => ({ m, i, hits: [...cues(X, m.replace(/^\([^)]*\) /, ""))].filter((w) => scene.has(w)).length }))
+          .sort((a, b) => b.hits - a.hits || b.i - a.i).slice(0, s.memories_recent).sort((a, b) => a.i - b.i);
+        add(4, X.byId[id].first + " remembers: " + pick.map((p) => p.m.slice(0, 160)).join(" "));
         n++;
       }
     }
@@ -1838,7 +1846,7 @@ const LW = (() => {
     if (!createNow && !designing) {
       const tp = planThoughts(X, L, ids, info.actionCount);
       W.auto = tp.auto;
-      block = buildInject(X, L, ids, tp);
+      block = buildInject(X, L, ids, tp, recent);
       W.asked = W.pendLog.length > 0;                          // the AI is asked for a {log} this turn
     }
     L.lastBlock = block;

@@ -405,11 +405,15 @@ assert(/^t: The way Tobin walks, so effortless, like he belongs here\.$/m.test(s
 assert.strictEqual(turn("I bow.", "(Mira: =) She curtsies deeply."), "She curtsies deeply.");
 
 // memories: a chronicle entry that names a character stays in their Notes, and comes back once the chronicle has moved on
-turn("I wait.", "Mira sighs. {log: Mira forgave the protagonist for the broken mug.}");
-assert(/^m: \(Day \d+\) Mira forgave the protagonist for the broken mug\.$/m.test(storyCards[0].description), "memory in Mira's Notes:\n" + storyCards[0].description);
+turn("I wait.", "Mira sighs. {log: Mira forgave the protagonist for the broken lamp.}");
+assert(/^m: \(Day \d+\) Mira forgave the protagonist for the broken lamp\.$/m.test(storyCards[0].description), "memory in Mira's Notes:\n" + storyCards[0].description);
 for (const l of ["The rain stopped.", "A bard came to town.", "The well froze."]) turn("/log " + l, "Nothing.");
 turn("I look at Mira.", "Mira hums.");
 assert(/Mira remembers: [^\]]*\(Day \d+\) Mira forgave the protagonist/.test(G.state.memory.frontMemory), "the AI gets the memory: " + G.state.memory.frontMemory);
+// an old memory comes back when the scene shares a word with it, even past memories_recent newer ones
+for (const l of ["Mira sang for the guests.", "Mira swept the cellar.", "The miller left.", "A cart broke down.", "The bell rang."]) turn("/log " + l, "Nothing.");
+turn("I hand Mira a new lamp.", "Mira hums.");
+assert(/Mira remembers: [^\]]*broken lamp/.test(G.state.memory.frontMemory) && !/Mira sang/.test(G.state.memory.frontMemory), "cue word brings back the lamp: " + G.state.memory.frontMemory);
 
 // another script overwrites frontMemory and the context is full: the line goes into the context text, cutting the oldest story
 G.info.actionCount++;
