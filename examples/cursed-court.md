@@ -153,12 +153,12 @@ twist: missing | stages: something personal of the protagonist's goes missing >>
 
 ## Arc card (Type: Arc)
 
-The three-act arc. Act 1 opens with the presentations, one occasion per scene: the King on arrival (and Mira), Rowan sworn in as the protagonist's escort, the Queen that evening, the Prince and Princess at a tea the next day, Tobin at the stables, the Duke and Seraphine at a ball (it waits for an evening), and Dorian when Elowen falls ill. Fixed beats are the spine of the plot and happen in order; around them, three of every four bank beats in each act are drawn at random each playthrough (`pick 75%`; `pick all` uses every one), and each one still needs its condition, so how you play decides which can happen. Keep `mode hybrid`: `random` could skip a fixed beat whose flag the next one needs. Commands: `/arc`, `/arc next`, `/arc reroll`, `/arc mode`, `/arc act N`.
+The three-act arc. Act 1 opens with the presentations, one occasion per scene: the King on arrival (and Mira), Rowan sworn in as the protagonist's escort, the Queen that evening, the Prince and Princess at a tea the next day, Tobin at the stables, the Duke and Seraphine at a ball (it waits for an evening), and Dorian when Elowen falls ill. Fixed beats are the spine of the plot and happen in order; around them, every bank beat is in play (`pick all`) and each one still needs its condition, so how you play decides which happen. Act 2 gives each character a thread of two scenes once their obsession shows (4, or 2 for Elowen and Hespera, whose obsession grows very slowly): first the shape their obsession takes, then a crossroads, tender or honest if they trust the protagonist (5+), dark if they do not (under 3). Characters the protagonist has barely dealt with get no scenes. Keep `mode hybrid`: `random` could skip a fixed beat whose flag the next one needs. Commands: `/arc`, `/arc next`, `/arc reroll`, `/arc mode`, `/arc act N`.
 
 ```
 Triggers: lw_arc
 Notes:
-arc: The Obsession Spiral | mode hybrid | pick 75% | hold 4
+arc: The Obsession Spiral | mode hybrid | pick all | hold 4
 act: 1 | The Veil | The curse is new and invasive. Keep the mood uneasy and intimate, and give each character a distinct first moment. The court is presented in order, one occasion at a time: someone not yet presented stays offstage until their beat.
 act: 2 | The Spiral | The obsession deepens and the court begins to notice. Tension, jealousy, and doubt about what is real.
 act: 3 | The Choice | The curse comes to a head. The protagonist decides whom to trust and who may touch them.
@@ -175,9 +175,45 @@ beat: 1 | bank | An Unwanted Escort | when: any obsession>=2 | guide: Someone in
 beat: 1 | bank | The Stolen Glance | when: met>=3, prob 25 | guide: The protagonist catches someone staring from across a room, and they do not look away.
 beat: 1 | bank | Kindness Without Hunger | when: any trust>=4 | guide: Someone shows the protagonist a small kindness that wants nothing back, and it is disarming.
 beat: 1 | bank | A Servant's Warning | when: met:Mira or Tobin, prob 20 | guide: A servant quietly warns the protagonist about someone at court.
-beat: 2 | bank | Possessive Jealousy | when: any obsession>=5 | guide: Someone becomes visibly jealous of another character's time with the protagonist.
+# Act 2 threads: two scenes per character, from what the protagonist has built with them. The first shows the shape of their obsession;
+# the second is a crossroads: tender or honest with trust, dark without it (one or the other, never both). Nobody built, no scene.
+beat: 2 | bank | A Father's Hours | when: Aldric.obsession>=4 | guide: King Aldric cancels audiences to dine alone with the protagonist and gives them keepsakes from his youth; the warmth is too much, and he cannot stop. | sets: aldric_shape
+beat: 2 | bank | Almost Said | when: flag:aldric_shape, !flag:aldric_turn, Aldric.obsession>=6, Aldric.trust>=5 | guide: Aldric comes within a breath of telling the protagonist he is their father, then stops, afraid of the Queen. What he does say changes how they see him. | sets: aldric_turn
+beat: 2 | bank | The Gilded Cage | when: flag:aldric_shape, !flag:aldric_turn, Aldric.obsession>=6, Aldric.trust<3 | guide: Aldric forbids the protagonist to leave the palace, "for your safety", and doubles the guard; the kindness has become a cage. | sets: aldric_turn
+beat: 2 | bank | The Queen's Game | when: Octavia.obsession>=4 | guide: Queen Octavia invites the protagonist to chess and wagers favors on each game. She plays to learn them, and lets them see it. | sets: octavia_shape
+beat: 2 | bank | A Truce of Sorts | when: flag:octavia_shape, !flag:octavia_turn, Octavia.obsession>=6, Octavia.trust>=5 | guide: Octavia tells the protagonist something true about herself, without apology or explanation, and offers a truce she may not keep. | sets: octavia_turn
+beat: 2 | bank | The Test | when: flag:octavia_shape, !flag:octavia_turn, Octavia.obsession>=6, Octavia.trust<3 | guide: In private, Octavia tests the counter-spell: she reaches for the protagonist slowly, watching what stops her. Make it cold and frightening; the protagonist's fear of her grows. | sets: octavia_turn
+beat: 2 | bank | Cracks in the Armor | when: Cassian.obsession>=4 | guide: On the training ground Prince Cassian loses control for a moment when the protagonist is near, then apologizes with rigid formality, ashamed. | sets: cassian_shape
+beat: 2 | bank | Off Duty | when: flag:cassian_shape, !flag:cassian_turn, Cassian.obsession>=6, Cassian.trust>=5 | guide: Cassian takes the protagonist to a hidden place of his own and admits he cannot tell what in him is real; the control cracks into something tender. | sets: cassian_turn
+beat: 2 | bank | The Heir's Order | when: flag:cassian_shape, !flag:cassian_turn, Cassian.obsession>=6, Cassian.trust<3 | guide: Cassian orders Rowan to report every move the protagonist makes, and calls it his duty as heir. | sets: cassian_turn
+beat: 2 | bank | Sweet Concern | when: Isolde.obsession>=4 | guide: Princess Isolde takes over the protagonist's days: she chooses their gowns, their company and their schedule, and keeps others away, all for their own good. | sets: isolde_shape
+beat: 2 | bank | Alone Together | when: flag:isolde_shape, !flag:isolde_turn, Isolde.obsession>=6, Isolde.trust>=5 | guide: Late at night Isolde's loneliness shows: she talks to the protagonist with no scheme at all, and seems frightened of how much she means it. | sets: isolde_turn
+beat: 2 | bank | Isolde's Web | when: flag:isolde_shape, !flag:isolde_turn, Isolde.obsession>=6, Isolde.trust<3 | guide: Isolde starts a small rumor to drive someone away from the protagonist; the trail leads back to her, if anyone looks. | sets: isolde_turn
+beat: 2 | bank | The Oath and the Pull | when: Rowan.obsession>=4 | guide: Rowan Hale asks to be reassigned from the protagonist's guard, ashamed of what he feels; he will not say why, and stays at his post until an answer comes. | sets: rowan_shape
+beat: 2 | bank | Night Watch | when: flag:rowan_shape, !flag:rowan_turn, Rowan.obsession>=6, Rowan.trust>=5 | guide: On a night watch outside the protagonist's door, Rowan speaks honestly about what he feels and why he will never act on it unless they ask. | sets: rowan_turn
+beat: 2 | bank | By the Book | when: flag:rowan_shape, !flag:rowan_turn, Rowan.obsession>=6, Rowan.trust<3 | guide: Rowan retreats into regulations and cold correctness, guarding himself as much as the protagonist. | sets: rowan_turn
+beat: 2 | bank | A Debt Offered | when: Evander.obsession>=4 | guide: Duke Evander Thorne does the protagonist a real favor (Elowen's papers, a debt paid, a door opened) and makes sure they know a debt now exists. | sets: evander_shape
+beat: 2 | bank | An Honest Bargain | when: flag:evander_shape, !flag:evander_turn, Evander.obsession>=6, Evander.trust>=5 | guide: Evander proposes a true alliance, cards on the table, and tells the protagonist exactly what he wants from it. | sets: evander_turn
+beat: 2 | bank | The Ledger | when: flag:evander_shape, !flag:evander_turn, Evander.obsession>=6, Evander.trust<3 | guide: The protagonist discovers that Evander keeps a ledger about them: habits, visitors, things said in passing. | sets: evander_turn
+beat: 2 | bank | Accidental Encounters | when: Seraphine.obsession>=4 | guide: Lady Seraphine is everywhere the protagonist goes, always by accident, always with a gift or an invitation ready. | sets: seraphine_shape
+beat: 2 | bank | Jealous of a Friend | when: flag:seraphine_shape, !flag:seraphine_turn, Seraphine.obsession>=6, Seraphine.trust>=5 | guide: Seraphine confesses that she has grown jealous of Isolde, her closest friend, because of the protagonist, and hates herself for it. | sets: seraphine_turn
+beat: 2 | bank | Sabotage | when: flag:seraphine_shape, !flag:seraphine_turn, Seraphine.obsession>=6, Seraphine.trust<3 | guide: Someone close to the protagonist is humiliated in public, and every sign points to Seraphine, who is all sympathy. | sets: seraphine_turn
+beat: 2 | bank | The Study | when: Dorian.obsession>=4 | guide: Dorian Lacroix asks to observe the protagonist: notes, measurements, tests of the counter-spell from a careful distance. His hands shake a little. | sets: dorian_shape
+beat: 2 | bank | Shared Notes | when: flag:dorian_shape, !flag:dorian_turn, Dorian.obsession>=6, Dorian.trust>=5 | guide: Dorian shows the protagonist what he has found about the curse and asks for their help, as an equal. | sets: dorian_turn
+beat: 2 | bank | The Notebook | when: flag:dorian_shape, !flag:dorian_turn, Dorian.obsession>=6, Dorian.trust<3 | guide: The protagonist finds Dorian's notebook: page after page about them, and not all of it is science. | sets: dorian_turn
+beat: 2 | bank | Small Devotions | when: Mira.obsession>=4 | guide: Mira anticipates every need before it is spoken, and has started sleeping on a pallet by the protagonist's door. | sets: mira_shape
+beat: 2 | bank | What the Walls Hear | when: flag:mira_shape, !flag:mira_turn, Mira.obsession>=6, Mira.trust>=5 | guide: Mira brings the protagonist a palace secret that puts her own place, or her safety, at risk. | sets: mira_turn
+beat: 2 | bank | Too Close | when: flag:mira_shape, !flag:mira_turn, Mira.obsession>=6, Mira.trust<3 | guide: Mira is caught going through the protagonist's things, and has an excuse ready that does not quite hold. | sets: mira_turn
+beat: 2 | bank | The Refuge | when: Tobin.trust>=5 | guide: The stables become the one place the protagonist can breathe; Tobin keeps it that way without being asked, clumsy and kind. | sets: tobin_shape
+beat: 2 | bank | Clumsy Courage | when: flag:tobin_shape, !flag:tobin_turn, Tobin.obsession>=6, Tobin.trust>=5 | guide: Tobin does something brave and foolish for the protagonist, and is embarrassed to be thanked. | sets: tobin_turn
+beat: 2 | bank | Keeping Away | when: flag:tobin_shape, !flag:tobin_turn, Tobin.obsession>=6, Tobin.trust<3 | guide: Tobin starts avoiding the protagonist, because he no longer trusts himself near them. | sets: tobin_turn
+beat: 2 | bank | A Mother's Fear | when: Elowen.obsession>=2 | guide: After her illness Elowen wants to leave the court at once; she checks on the protagonist at night and wants to know where they are at every hour. | sets: elowen_shape
+beat: 2 | bank | What She Gave Up | when: flag:elowen_shape, !flag:elowen_turn, Elowen.obsession>=4, Elowen.trust>=5 | guide: Elowen tells the protagonist about Aldric, and why she hid them from everyone all these years. Her love is fierce, and she is beginning to hold too tight. | sets: elowen_turn
+beat: 2 | bank | Locked Doors | when: flag:elowen_shape, !flag:elowen_turn, Elowen.obsession>=4, Elowen.trust<3 | guide: Elowen plans to take the protagonist away from the palace at night, without asking them. | sets: elowen_turn
+beat: 2 | bank | Old Wards | when: Hespera.obsession>=2 | guide: Hespera redoubles the counter-spell: herbs at every door, salt on the sills, and she sleeps across the protagonist's threshold. | sets: hespera_shape
+beat: 2 | bank | The Nursemaid's Story | when: flag:hespera_shape, !flag:hespera_turn, Hespera.obsession>=4, Hespera.trust>=5 | guide: Hespera tells the protagonist about the night she cast the counter-spell over their cradle, and what it cost her. | sets: hespera_turn
+beat: 2 | bank | Her Charge | when: flag:hespera_shape, !flag:hespera_turn, Hespera.obsession>=4, Hespera.trust<3 | guide: Hespera decides for the protagonist: she hides a letter, or turns a visitor away, for their own good. | sets: hespera_turn
 beat: 2 | bank | The Near-Touch | when: any obsession>=6 | guide: Someone reaches out. The counter-spell stops them, and the scene turns eerie: the hand freezes and the air turns cold. The person is shaken and invents an explanation.
-beat: 2 | bank | A Genuine Moment | when: any trust>=5 | guide: A tender, sincere scene where trust is earned slowly. The protagonist doubts it even as they feel it.
 beat: 2 | bank | A Confession | when: any attraction>=7 trust>=6 | guide: Someone confesses sincerely, in words that sound unlike the curse's pleading. The protagonist cannot tell whether it is real, and must decide how to answer.
 beat: 2 | fixed | Midpoint, The Breach | when: flag:gift_received, action>=100 | guide: Witnesses see the counter-spell hold. Rumors of witchcraft begin. | sets: rumors
 beat: 2 | fixed | Blood Ties Surface | when: flag:blood_suspected | guide: The truth comes out: the King's guest is his child, and Cassian and Isolde are their half-siblings. Whoever learns it is torn between the fixation, shame, and the possibility that some of what they feel is real, and the King's pretense starts to crack. Handle it with weight, never as a casual line. The protagonist decides what, if anything, happens next. | sets: blood_ties_known
@@ -277,14 +313,14 @@ Tobin Wren, the stable master, 28. Gentle, plain-spoken, uninterested in court g
 
 ```
 Triggers: Elowen
-Notes: [cfg obsession:0 start.trust:9 trust:0.04 romance:no noearly thoughts:8 tone:worried_and_protective alias:Mother/Mama]
+Notes: [cfg obsession:0.08 start.trust:9 trust:0.2 romance:no noearly thoughts:8 tone:worried_and_protective alias:Mother/Mama]
 Entry:
 Elowen Marsh, the protagonist's mother, a minor noblewoman, 41. Fierce, anxious, endlessly protective. She hid her child from the curse all their life and has come to court with them to find a way to break it. She keeps the curse from the King, afraid of what he would do, and plays along with the pretense that her child is only a guest. She sometimes treats the protagonist as fragile when they are not. Appearance: slight, brown hair graying at the temples, a worn kind face, plain dark dresses.
 ```
 
 ```
 Triggers: Hespera, Brindle
-Notes: [cfg obsession:0 start.trust:8 trust:0.04 romance:no noearly alias:the_nursemaid/Nanny thoughts:8 tone:wry_and_guarded]
+Notes: [cfg obsession:0.08 start.trust:8 trust:0.2 romance:no noearly alias:the_nursemaid/Nanny thoughts:8 tone:wry_and_guarded]
 Entry:
 Hespera Brindle, the nursemaid and hedge witch, 67. Blunt, wry, seen-it-all. She cast the counter-spell that protects the protagonist, came to court with them, and knows more about the curse than she admits. Appearance: small and bent, a long white braid, sharp black eyes, a herb-stained shawl, hands like gnarled roots.
 ```
