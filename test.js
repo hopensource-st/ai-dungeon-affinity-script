@@ -432,4 +432,9 @@ assert(line && ctxOut.includes(line) && ctxOut.length < ctxIn.length + 20, "line
 assert(/^AI INSTRUCTIONS\n/.test(ctxOut) && /\nI look at Selene\.$/.test(ctxOut), "instructions and latest action kept:\n" + ctxOut);
 assert(/another script/i.test(run("input", "/check").text), "/check reports the takeover");
 
+// a block whose LW>> was deleted by hand: the edited number is adopted and the block closed again
+storyCards[0].description = storyCards[0].description.replace("\nLW>>", "").replace(/^affinity: [\d.]+$/m, "affinity: 3.0");
+turn("I wait.", "Mira hums.");
+assert(G.state.lw.rel["1"].s.affinity === 3 && (storyCards[0].description.match(/<<LW/g) || []).length === 1 && /\nLW>>$/.test(storyCards[0].description), "broken block mended:\n" + storyCards[0].description);
+
 console.log("ok");

@@ -12,7 +12,9 @@ const LW = (() => {
   const clone = (o) => JSON.parse(JSON.stringify(o));
   const andList = (a) => (a.length > 1 ? a.slice(0, -1).join(", ") + " and " + a[a.length - 1] : a.join(""));
 
-  const BLOCK = /<<LW\n[\s\S]*?\nLW>>/;
+  // a block whose LW>> was deleted by hand runs to the end of the Notes, so its edited numbers are still read
+  // ponytail: anything the player wrote after a broken block is taken as part of it and rewritten away
+  const BLOCK = /<<LW\n[\s\S]*?(?:\nLW>>|$)/;
   const RELBLOCK = /<<LWR\n[\s\S]*?\nLWR>>/;
   const CFGRE = /\[cfg([^\]]*)\]/i;
   const MARK = /[ \t]*\[LW:[^\]]*\]/g;
