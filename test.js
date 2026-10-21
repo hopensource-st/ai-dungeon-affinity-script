@@ -149,7 +149,7 @@ const runTwist = (reply) => {
   for (let i = 0; i < 12 && Wc.tw; i++) turn("I chat with Mira.", "Mira hums, beat " + i + ".");
   assert(!Wc.tw && Wc.pendLog.length, "twist ended");
   const out = turn("I chat with Mira.", reply);
-  assert(/\{log: one past-tense sentence/.test(G.state.memory.frontMemory), "AI asked for a summary");
+  assert(/\{log: one short past-tense sentence, under 15 words/.test(G.state.memory.frontMemory), "AI asked for a summary");
   return out;
 };
 let shownLog = runTwist("Mira finally speaks.\n{log: Mira admitted she had been reading the protagonist's letters.}");

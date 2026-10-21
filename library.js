@@ -74,8 +74,8 @@ const LW = (() => {
       touch_stats: "affinity|attraction|trust|obsession", touch_bonus: 0.3,
       // memories: a chronicle entry that names a character is kept as an m: line in their Notes; the AI gets the last few while they are in the scene
       memories_keep: 8, memories_recent: 2, memories_context: 2,
-      thoughts: true, thoughts_show: false, thoughts_interval: 4, thoughts_max: 1, thoughts_keep: 20, thoughts_words: 20, thoughts_context: 2, thoughts_recent: 3,
-      chronicle_lines: 3, chronicle_every: 8, chronicle_max: 200, chronicle_stats: "affinity|attraction|obsession", chronicle_min: 4,
+      thoughts: true, thoughts_show: false, thoughts_interval: 4, thoughts_max: 1, thoughts_keep: 20, thoughts_words: 12, thoughts_context: 2, thoughts_recent: 3,
+      chronicle_lines: 3, log_words: 15, chronicle_every: 8, chronicle_max: 200, chronicle_stats: "affinity|attraction|obsession", chronicle_min: 4,
       clock: true, clock_times: "dawn|morning|afternoon|evening|night", clock_day: 1, clock_time: "morning", clock_turns: 12, clock_on_beat: false,
       scene: true, scene_len: 6,
       scene_setup: "Scene: setup. Establish the place and what each character wants; let tension build.",
@@ -694,7 +694,7 @@ const LW = (() => {
     }
     // both want the top of the reply, so they go last, on a line of their own: the log line first, the thoughts right after it
     const top = [];
-    if (W.pendLog.length) top.push("Put {log: one past-tense sentence in the third person, naming " + (String(s.protagonist || "").trim() || "the protagonist") + ", summing up what just happened} alone on the first line of the reply.");
+    if (W.pendLog.length) top.push("Put {log: one short past-tense sentence, under " + s.log_words + " words, in the third person, naming " + (String(s.protagonist || "").trim() || "the protagonist") + ", summing up what just happened} alone on the first line of the reply.");
     if (thx) top.push(thoughtInstr(X, tp, L).replace(/^Begin the reply with/, W.pendLog.length ? "After that line, write" : "Begin the reply with"));
     const topText = top.join(" ");
     const len = () => parts.reduce((n, x) => n + x.t.length + 1, 2) + (topText ? topText.length + 1 : 0);
@@ -1388,7 +1388,7 @@ const LW = (() => {
     const mood = X.cfg.s.mood;
     // in braces, like {log: ...}: a marker for the engine, never prose, so it does not clash with the style
     return "Begin the reply with " + names.map((n) => "{" + n + (mood ? " (=)" : "") + ": ...}").join(" ") +
-      ": one new first-person thought each, under " + X.cfg.s.thoughts_words + " words, naming people, not pronouns" +
+      ": one short new first-person thought each, under " + X.cfg.s.thoughts_words + " words, naming people, not pronouns" +
       (mood ? "; in the parentheses put + if warmer toward the protagonist, - if cooler, = if unchanged" : "") +
       (tones.length ? "; tone: " + tones.join(", ") : "") + ". The braces are not part of the story. Then continue the story.";
   };
@@ -2058,7 +2058,7 @@ const LW = (() => {
       String(raw).replace(/«([^»]*)»/g, (m, q) => { segs.push(q); return m; });
       let tx = (segs.length ? segs[0] : String(raw).replace(/^[«"“\s]+|[»"”\s]+$/g, "")).trim();
       if (!tx) return null;
-      const words = tx.split(/\s+/), cap = X.cfg.s.thoughts_words * 2;
+      const words = tx.split(/\s+/), cap = Math.max(40, X.cfg.s.thoughts_words * 2);   // asked short, stored whole up to here
       if (words.length > cap) tx = words.slice(0, cap).join(" ") + "…";
       if (!found.some((f) => f.ch.id === ch.id)) found.push({ ch, text: tx, sg });   // every thought removed from the story is stored
       return ch.first + " thinks: «" + tx + "»";
@@ -2085,7 +2085,7 @@ const LW = (() => {
       let n = 0, k = 0;
       for (; k < sents.length; k++) {
         const w = sents[k].split(/\s+/).length, first = sents[k].replace(/^[*_]+/, "").split(/[\s,]/)[0];
-        if (k && (n + w > X.cfg.s.thoughts_words || findChar(X, first) || /^(?:He|She|They|His|Her|Their|Its)$/.test(first))) break;
+        if (k && (n + w > Math.max(20, X.cfg.s.thoughts_words) || findChar(X, first) || /^(?:He|She|They|His|Her|Their|Its)$/.test(first))) break;
         n += w;
       }
       return [sents.slice(0, k).join(" "), sents.slice(k).join(" ")];
