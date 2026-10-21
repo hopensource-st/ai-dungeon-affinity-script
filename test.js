@@ -470,6 +470,13 @@ assert(dread() > d0, "dread up after cruelty: " + d0 + " -> " + dread());
 d0 = dread();
 turn("I thank Mira.", "Mira smiles at you warmly.");
 assert(dread() < d0, "dread down after kindness: " + d0 + " -> " + dread());
+// eases: while Mira's affinity is high, dread falls once per scene with her, even when nothing happens
+dreadCfg.description = cfgBefore + "\nstat: dread | auto | 0-10 | start 3 | rate -0.5 | eases affinity>=5";
+G.state.lw.rel["1"].s.affinity = 8;
+turn("/scene", "Nothing.");
+d0 = dread();
+turn("I look at Mira.", "Mira hums.");
+assert(dread() < d0, "dread eases with high affinity: " + d0 + " -> " + dread());
 dreadCfg.description = cfgBefore;
 
 // a block whose LW>> was deleted by hand: the edited number is adopted and the block closed again

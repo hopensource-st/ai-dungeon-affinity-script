@@ -183,11 +183,11 @@ const LW = (() => {
   const defaultCfgText = () => {
     const onoff = (v) => (v === true ? "on" : v === false ? "off" : String(v));
     const l = ["# Engine settings. Edit any value; lines starting with # are ignored. Delete this card to get the defaults back.",
-      "# stat: name | auto or manual | min-max | start N | rate N | flags (damp, romance, steady, keep, needs stat>=N)",
+      "# stat: name | auto or manual | min-max | start N | rate N | flags (damp, romance, steady, keep, needs stat>=N, eases stat>=N)",
       "# auto stats move with the mood of each scene (mood_* settings); steady ones always rise while the character is present"];
     for (const d of DEF.stats)
       l.push("stat: " + [d.name, d.mode, d.min + "-" + d.max, "start " + d.start, "rate " + d.rate]
-        .concat(d.damp ? ["damp"] : [], d.romance ? ["romance"] : [], d.steady ? ["steady"] : [], d.keep ? ["keep"] : [], d.needs ? ["needs " + d.needs.stat + d.needs.op + d.needs.val] : []).join(" | "));
+        .concat(d.damp ? ["damp"] : [], d.romance ? ["romance"] : [], d.steady ? ["steady"] : [], d.keep ? ["keep"] : [], d.needs ? ["needs " + d.needs.stat + d.needs.op + d.needs.val] : [], d.eases ? ["eases " + d.eases.stat + d.eases.op + d.eases.val] : []).join(" | "));
     l.push("# stages: stat | threshold=text the AI receives | ...   (empty text = nothing is sent)");
     for (const k of Object.keys(DEF.stages)) l.push("stages: " + k + " | " + DEF.stages[k].map((e) => e[0] + "=" + e[1]).join(" | "));
     l.push("# settings (see the README for what each one does)");
@@ -232,6 +232,7 @@ const LW = (() => {
           else if ((m = f.match(/^start\s+(-?[\d.]+)/i))) d.start = num(m[1], 0);
           else if ((m = f.match(/^rate\s+(-?[\d.]+)/i))) d.rate = num(m[1], 0);
           else if ((m = f.match(/^needs\s+(\w+)\s*(>=|<=|>|<)\s*(-?[\d.]+)/i))) d.needs = { stat: m[1].toLowerCase(), op: m[2], val: num(m[3], 0) };
+          else if ((m = f.match(/^eases\s+(\w+)\s*(>=|<=|>|<)\s*(-?[\d.]+)/i))) d.eases = { stat: m[1].toLowerCase(), op: m[2], val: num(m[3], 0) };
           else if (/^damp$/i.test(f)) d.damp = true;
           else if (/^romance$/i.test(f)) d.romance = true;
           else if (/^steady$/i.test(f)) d.steady = true;
@@ -2196,6 +2197,11 @@ const LW = (() => {
         if (rate * f > 0 && d.needs && !cmp(snapshot[d.needs.stat] != null ? snapshot[d.needs.stat] : 0, d.needs.op, d.needs.val)) continue;
         const delta = rate * accel * f * (d.damp && damped ? X.cfg.s.damp_factor : 1);
         r.s[d.name] = clamp(r.s[d.name] + delta, d.min, d.max);
+      }
+      // eases: while another stat holds (fear eases attraction>=6), this one falls by its rate once per scene together
+      if (newScene) for (const d of activeStats(X, ch)) {
+        if (!d.eases || !cmp(snapshot[d.eases.stat] != null ? snapshot[d.eases.stat] : 0, d.eases.op, d.eases.val)) continue;
+        r.s[d.name] = clamp(r.s[d.name] - Math.abs(rateOf(d, ch) || 0.1), d.min, d.max);
       }
       // the chronicle notes when a feeling crosses a big threshold
       for (const name of logStats) {

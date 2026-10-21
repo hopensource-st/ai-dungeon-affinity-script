@@ -24,8 +24,9 @@ Notes:
 # trust and attraction move with the mood of each scene: up when it goes well, down when it goes badly.
 stat: obsession | auto | 0-10 | start 0 | rate 0.3 | damp | steady | keep
 stat: trust | auto | 0-10 | start 3 | rate 0.12 | damp
-# fear (the protagonist's fear of them) runs against the mood: up when they treat the protagonist badly, down when kindly
-stat: fear | auto | 0-10 | start 0 | rate -0.15
+# fear (the protagonist's fear of them) runs against the mood: up when they treat the protagonist badly, down when kindly,
+# and it eases a little every scene together while the protagonist's attraction to them is real (6+)
+stat: fear | auto | 0-10 | start 0 | rate -0.15 | eases attraction>=6
 stat: attraction | auto | 0-10 | start 0 | rate 0.15 | romance | needs trust>=3
 stages: obsession | 0=faintly curious about the protagonist | 2=preoccupied, thinks of the protagonist too often | 4=fixated, finds excuses to be near the protagonist | 6=possessive and jealous of others near the protagonist | 8=consumed, dangerously obsessed with the protagonist
 stages: trust | 0=wary of the protagonist | 3=tentatively trusts the protagonist | 6=trusts the protagonist | 8=trusts the protagonist deeply
