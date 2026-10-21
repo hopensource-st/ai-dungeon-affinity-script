@@ -5,7 +5,7 @@
 // Stats, relations, thoughts, chronicle, events, arc, clock, scenes, cleaner, card creation, commands.
 // ============================================================================
 const LW = (() => {
-  const VERSION = "1.1.4";                                    // shown by /check; bump it on every published update
+  const VERSION = "1.1.5";                                    // shown by /check; bump it on every published update
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const num = (v, d) => { const n = parseFloat(v); return isNaN(n) ? d : n; };
   const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

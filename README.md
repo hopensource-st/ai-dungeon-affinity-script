@@ -137,7 +137,7 @@ Beats, events and twists can also carry `adds: obsession+1.5, attraction+1`: whe
 
 Conditions (comma-separated): `action>=30`, `day>=3`, `actscene>=8` (scenes since this act began), `time:evening`, `flag:x`, `!flag:x`, `fired:id`, `met:Name`, `present:Name`, `met>=3`, `Name.stat>=N`, `any stat>=N`, `prob 20`. The AI may also write `{flag:x}`, `{event:id}`, `{log:text}` or `{beat}`; the engine acts on them and removes them.
 
-[`examples/cursed-court.md`](examples/cursed-court.md) is a full scenario that uses every feature.
+[`examples/cursed-court.md`](examples/cursed-court.md) is a full three-act scenario built on these features: its own stats (fear included, easing with trust), the court as a collective character, public moments with `adds`, a two-scene thread for each character in act 2, a final scene for each in act 3, and twists that pick by obsession. Its Arc card holds the story's final twist: keep players out of it.
 
 ## Testing
 

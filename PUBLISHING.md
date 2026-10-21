@@ -14,7 +14,7 @@ Desde el parche 2.39.0 (agosto de 2026), AI Dungeon tiene **Scripts como conteni
 4. **Marca el escenario como Script.**
 5. **Portada:** una imagen que represente vínculos, recuerdos o hilos entre personajes.
 6. **Publica.** Los escenarios pasan por la moderación automática antes de publicarse.
-7. **Pruébalo como jugador:** en una partida cualquiera (por ejemplo, un escenario ajeno con tarjetas de personaje), añade el Script, juega una acción y escribe `/check`. Debe decir `LW Affinity Engine` y la versión (ahora `1.1.4`) y el número de personajes que ha encontrado.
+7. **Pruébalo como jugador:** en una partida cualquiera (por ejemplo, un escenario ajeno con tarjetas de personaje), añade el Script, juega una acción y escribe `/check`. Debe decir `LW Affinity Engine` y la versión (ahora `1.1.5`) y el número de personajes que ha encontrado.
 
 ### Al actualizar
 1. Sube el número en `const VERSION = "1.0.0"` (línea 8 de `library.js`): `1.0.1` para arreglos, `1.1.0` para funciones nuevas.
@@ -41,8 +41,8 @@ Give every character in your adventure a relationship with you that grows or sou
 
 WHAT IT DOES
 • Feelings: affinity, trust, attraction and obsession for every character card, plus one or two stats the AI designs for your story on the first action. Kind scenes raise them, cruel ones lower them, and the AI is only told what changed.
-• Thoughts: characters in the scene think in private now and then. Their latest thoughts are kept in their card's Notes, under their stats, never in the story.
-• Chronicle: the AI writes one line per scene into a Chronicle card and gets the last three back, so long stories keep their thread. Each character also keeps the moments that name them as memories of their own.
+• Thoughts: one character in the scene thinks in private each turn, in a short line. Their latest thoughts are kept in their card's Notes, under their stats, never in the story.
+• Chronicle: the AI writes one line per scene into a Chronicle card and gets the last three back, so long stories keep their thread. Each character also keeps what they lived through as memories of their own, and they come back when the scene touches them.
 • Clock: day and time of day, moved only when the story says time passes.
 • Surprises: twists fitted to whoever is in the scene, random ties between characters who meet, and a three-act arc whose beats are drawn differently every playthrough.
 • Card hints: when the AI keeps using a name with no card, you get a note with the exact /npc command to add one.
@@ -60,6 +60,16 @@ TIPS
 • Keep your own character out: add "skip: YourName" to the LW Config card.
 • Choose your own yandere: put [cfg obsession:0.3] in that character's card Notes. No surprise yanderes: add "yandere_chance: 0" to LW Config.
 • Another script also writes Front Memory? The engine notices and sends its line another way. If characters still never think, add "inject: text" to LW Config.
+
+WHAT'S NEW IN 1.1.5
+• Feelings move only with how a character treats you: someone glaring at a stranger no longer lowers their affinity for you.
+• Memories come back when the scene touches them: hand someone a lamp and they remember the lamp you broke, however long ago. The ones that keep coming back are the last to be forgotten.
+• Witnesses: everyone in the scene remembers what happened there, and a character who thinks right then keeps their own view of it.
+• The chronicle and memories no longer repeat the same moment twice.
+• Thoughts: one character thinks per turn, in a short line, stored and sent whole, never cut in the middle of a word. A thought is kept even when the AI gets the name wrong ("She", "Lady Mira").
+• Chronicle lines are asked for short, so they read like a log, not a recap.
+• Numbers you edit by hand in a card's Notes are kept even if you deleted the block's last line by mistake.
+• For scenario authors: beats, events and twists can raise everyone's stats with adds (who.fear+2 for the twist's own character); a stat can fade while another holds (eases), or move against the mood with a negative rate, like fear; [cfg crowd] makes a collective character such as a royal court; twists can pick by a stat (who: obsession>=5); actscene>=N lets a beat wait. See the README.
 
 WHAT'S NEW IN 1.1.4
 • Continue no longer counts your last action twice (time jumps, mood, touches).
@@ -111,3 +121,56 @@ Before the story begins, tell it who you are and where you stand. Write your fir
 - **Front Memory:** el motor escribe ahí la línea para la IA. Si otro Script la pisa, el motor lo detecta y mete la línea en el contexto, recortando lo más antiguo de la historia si va lleno (`/check` lo dice). Si el otro Script la pisa más tarde y el motor no llega a verlo, pon `inject: text` en LW Config.
 - **Marcas sueltas:** si ves en la historia restos como `{log: ...}` o `Mira thinks: «...»`, es que otro Script toca el texto antes que este. Prueba a cambiar el orden de los Scripts en la partida.
 - **Su propio espacio:** el motor solo usa `state.lw` y sus tarjetas `LW`, así que no choca con los datos de otros Scripts.
+
+---
+
+# Publicar el escenario The Cursed Court
+
+El escenario usa el motor (pega los cuatro archivos en su Scripting, o añade el Script publicado) y las tarjetas de [`examples/cursed-court.md`](examples/cursed-court.md). **No pongas el giro final en ningún texto público:** solo vive en el beat *The Queen's Confession* de la tarjeta Arc.
+
+### Título
+```
+The Cursed Court
+```
+
+### Descripción corta (una línea)
+```
+Everyone at the royal court is drawn to you. Only four people know about the curse, and one of them cast it.
+```
+
+### Descripción completa
+```
+You and your mother arrive at the royal palace as the King's honored guests, hoping to break the curse you have lived with since birth: everyone who meets you is drawn to you, and it never stops growing. Only you, your mother Elowen, your old nursemaid Hespera and the Queen know about it. Hespera's counter-spell keeps any hand from touching you unless you allow it. Everyone else just feels the pull, and does not know why.
+
+WHAT TO EXPECT
+• A court of twelve, each with their own obsession, trust, attraction, and how much you fear them. The court itself watches, whispers and grows fixated as one.
+• Act 1 presents the court one occasion at a time: the King, your sworn escort, the Queen, a presentation tea, the stables, a ball, and a night when the Queen makes you perform your greatest talent before everyone.
+• Act 2 follows each person you get close to, in two scenes of their own: the shape their obsession takes, and then a crossroads, tender if they trust you, dark if they do not. Around it, the court turns dangerous.
+• Act 3: a final scene for each, from real feeling or from fear, and an ending that changes everything.
+• Nobody wants you dead. The danger is being kept.
+
+HOW TO PLAY
+Choose your greatest talent when the adventure starts. Play as you like: how you treat each person decides which scenes come. /rels shows how everyone feels about you; /arc shows where the story stands.
+
+Dark themes: obsession, captivity, manipulation and fear. Nothing graphic.
+
+Runs on the LW Affinity Engine 1.1.5.
+```
+
+### Novedades de esta actualización
+```
+WHAT'S NEW
+• Act 1 presents the court in order, one occasion at a time, from the King's welcome to a night when the Queen makes you perform your greatest talent (you choose it when the adventure starts). Rowan is sworn in as your escort.
+• Act 2: everyone you get close to has two scenes of their own, the shape of their obsession and a crossroads that depends on whether they trust you.
+• Act 3: a final scene for each, from real feeling or from fear, and a new ending.
+• The court is a character: it watches, whispers and grows fixated as one, and public moments make everyone there more drawn to you.
+• Dread: a masked ball, a hidden room, footsteps at night, an envoy who will not take no, the Church, an abduction, and a court that tears itself apart over you.
+• Fear is now part of every relationship: it grows when someone treats you badly or frightens you, and eases with real trust.
+• Elowen and Hespera feel the pull too, very slowly; their love for you runs deeper.
+• No more random friendships between people the story keeps apart.
+```
+
+### Etiquetas sugeridas
+```
+romance, horror, mystery, dark, court, obsession, script
+```
