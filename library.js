@@ -1026,7 +1026,7 @@ const LW = (() => {
     .split(/(?<=[.!?])\s+/).filter((s) => !/\b(?:remember\w*|recall\w*|memor\w+|ago|used\s+to|once\s+upon)\b/i.test(s)).join(" ");
   const detectJump = (text) => {
     const t = narration(text);
-    for (const r of JUMPS) { const m = t.match(r[0]); if (m) { const j = r[1](m); if (!("tod" in j) || j.tod || j.day) return j; } }
+    for (const r of JUMPS) { const m = t.match(r[0]); if (m) { const j = r[1](m); if (!("tod" in j) || j.tod || j.day) return Object.assign(j, { why: m[0] }); } }
     return null;
   };
   const applyJump = (X, W, j) => {
@@ -1101,7 +1101,9 @@ const LW = (() => {
     const src = chrSource(x).trim();
     if (src === (L.wm || "")) return;
     const cur = chrParse(src);
+    const was = W.day + ":" + W.tod;
     if (cur.blk) wAdopt(X, W, cur.blk);
+    if (was !== W.day + ":" + W.tod) W.jw = "the Chronicle card";
     if (cur.log.length || cur.blk) W.log = cur.log.slice(-LOG_KEEP);
     L.wm = src;
   };
@@ -1764,7 +1766,7 @@ const LW = (() => {
     if (cmd === "scene") { W.sc = { n: W.sc.n + 1, t: 0 }; if (X.cfg.s.chronicle_every > 0) W.pendLog.push(""); return { note: "Scene " + W.sc.n + " begins." }; }
     if (cmd === "time" || cmd === "day") {
       const a = arg.toLowerCase(), t = times(X);
-      if (!a) return { note: dayLabel(X, W) + "." };
+      if (!a) return { note: dayLabel(X, W) + "." + (W.jw ? " Last moved by " + W.jw + "." : "") };
       let m;
       if (cmd === "day") {
         if ((m = a.match(/^([+-]\d+)$/))) W.day = Math.max(1, W.day + parseInt(m[1], 10));
@@ -1779,7 +1781,7 @@ const LW = (() => {
           if (nm) W.tod = t.indexOf(nm); else if (!dm) return { note: "Use /time morning, /time +1, or /time day 3 evening. Times: " + t.join(", ") + "." };
         }
       }
-      W.ct = 0;
+      W.ct = 0; W.jw = "/" + cmd + " " + arg + ", turn " + info.actionCount;
       return { note: "It is now " + dayLabel(X, W) + "." };
     }
     if (cmd === "think") {
@@ -2303,10 +2305,11 @@ const LW = (() => {
     const was = W.day + ":" + W.tod;
     if (jump && ts.clock) applyJump(X, W, jump);
     const moved = !!jump && (!ts.clock || was !== W.day + ":" + W.tod);
-    if (moved) W.sc = { n: W.sc.n + 1, t: 0 };
+    // what moved the clock last, for /time: a jump the AI made by mistake shows its words
+    if (moved) { W.sc = { n: W.sc.n + 1, t: 0 }; if (ts.clock) W.jw = "«" + jump.why + "», turn " + turn; }
     else {
       W.sc.t++;
-      if (ts.clock) { W.ct++; if (ts.clock_turns > 0 && W.ct >= ts.clock_turns) advTod(X, W, 1); }
+      if (ts.clock) { W.ct++; if (ts.clock_turns > 0 && W.ct >= ts.clock_turns) { advTod(X, W, 1); W.jw = ts.clock_turns + " turns with no jump (clock_turns), turn " + turn; } }
     }
     // scene summaries: when a scene closes, or every chronicle_every turns of a long one, the AI logs what happened
     // (an empty fallback: nothing generic is written if it forgets)

@@ -218,6 +218,7 @@ for (let i = 0; i < 15; i++) turn("I keep talking.", "Mira answers, point " + i 
 assert(at() === "day 6 tod 4", "clock_turns: one step after 12 turns with no jump -> " + at());
 turn("I go home.", "The next morning, the square is quiet.");
 assert(at() === "day 7 tod 1", "the next morning -> " + at());
+assert(/Last moved by «The next morning», turn \d+/.test(run("input", "/time").text), "/time names what moved the clock: " + run("input", "/time").text);
 // sleep and waking, and "that afternoon" said in the evening (today, not tomorrow)
 Wk.tod = 3;
 turn("I wait.", "That afternoon had been long. Mira yawns.");
