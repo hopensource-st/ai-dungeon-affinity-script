@@ -58,7 +58,7 @@ thoughts_keep: 20
 thoughts_recent: 1
 thoughts_context: 2
 thoughts_interval: 4
-thoughts_max: 2
+thoughts_max: 1
 thoughts_words: 20
 thoughts_show: off
 # memories: chronicle entries that name a character stay in their Notes (m: lines)

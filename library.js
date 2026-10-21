@@ -74,7 +74,7 @@ const LW = (() => {
       touch_stats: "affinity|attraction|trust|obsession", touch_bonus: 0.3,
       // memories: a chronicle entry that names a character is kept as an m: line in their Notes; the AI gets the last few while they are in the scene
       memories_keep: 8, memories_recent: 2, memories_context: 2,
-      thoughts: true, thoughts_show: false, thoughts_interval: 4, thoughts_max: 2, thoughts_keep: 20, thoughts_words: 20, thoughts_context: 2, thoughts_recent: 3,
+      thoughts: true, thoughts_show: false, thoughts_interval: 4, thoughts_max: 1, thoughts_keep: 20, thoughts_words: 20, thoughts_context: 2, thoughts_recent: 3,
       chronicle_lines: 3, chronicle_every: 8, chronicle_max: 200, chronicle_stats: "affinity|attraction|obsession", chronicle_min: 4,
       clock: true, clock_times: "dawn|morning|afternoon|evening|night", clock_day: 1, clock_time: "morning", clock_turns: 12, clock_on_beat: false,
       scene: true, scene_len: 6,
