@@ -71,6 +71,7 @@ Optional. Put a `[cfg ...]` line in the character card's Notes:
 - `thoughts:3` thinks every 3 turns in the scene (0 = never).
 - `tone:proud_and_lonely` colours their thoughts.
 - `noearly`, `skip`.
+- `crowd`: a collective character (the court, a crowd, a crew). It has stats and stages and takes `adds:`, but it is never counted as someone met, picked as one person for a twist, matched by `any`, paired for ties or tension, or given memories. Give it `thoughts:0` too.
 
 And any number of `base: text` lines in Notes: author-written thoughts used first, one at a time, before the AI writes its own.
 
@@ -131,6 +132,8 @@ beat: 1 | bank | A Rival | when: met>=3 | guide: Someone resents the attention t
 ```
 
 `pick` is how many bank beats each act draws: a number (`pick 2`), a share of that act's bank (`pick 75%`) or `pick all`. An act does not end until its drawn bank beats have happened too, unless one never fits: then the act moves on after twice `act_scenes`.
+
+Beats, events and twists can also carry `adds: obsession+1.5, attraction+1`: when they end, those stats rise (or fall, with a minus) for everyone who appeared while they ran, whatever the stat's `needs`. A public performance or a ball that makes everyone more fixated is one line.
 
 Conditions (comma-separated): `action>=30`, `day>=3`, `actscene>=8` (scenes since this act began), `time:evening`, `flag:x`, `!flag:x`, `fired:id`, `met:Name`, `present:Name`, `met>=3`, `Name.stat>=N`, `any stat>=N`, `prob 20`. The AI may also write `{flag:x}`, `{event:id}`, `{log:text}` or `{beat}`; the engine acts on them and removes them.
 
