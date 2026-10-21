@@ -1862,6 +1862,7 @@ const LW = (() => {
       W.auto = tp.auto;
       block = buildInject(X, L, ids, tp, recent);
       W.asked = W.pendLog.length > 0;                          // the AI is asked for a {log} this turn
+      W.thAsk = tp.instr.map((ch) => ch.id);                   // and for these characters' thoughts, in this order
     }
     L.lastBlock = block;
     L.lastAction = createNow ? "" : rest.replace(MARK, "");
@@ -2001,6 +2002,23 @@ const LW = (() => {
       .replace(/\{\s*(flag|event|beat|log)\s*(?::\s*([^}\n]*))?$/gim, onMark)
       .replace(/^[ \t]*[*_]*log[ \t]*:[ \t]*([^\n]*\S)[ \t]*(?:\n|$)/gim, (m, v) => onMark(m, "log", v))   // "log: ..." with no braces
       .replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").replace(/\s+$/, "");
+    // the thoughts asked for open the reply, in order: the engine knows whose they are, whatever name the AI wrote
+    // ("{She (+): ...}", "{Lady Mira: ...}", "{(+): ...}"), so the name is written back as the one asked for
+    const ask = (L.applied.fresh && W.thAsk) || [];
+    for (let i = 0, at = 0; i < ask.length && X.byId[ask[i]]; i++) {
+      const m = body.slice(at).match(/^\s*\{([^{}\n:]{0,40}):/);
+      if (!m) break;
+      const ch = X.byId[ask[i]], head = m[1].replace(/[*_]/g, "");
+      const sg = (head.match(/\(([^)]*)\)/) || [])[1];
+      const nm = head.replace(/\([^)]*\)/g, "").replace(/\s+thinks\s*$/i, "").trim();
+      const other = nm ? findChar(X, nm) : null;
+      const words = ch.names.join(" ").toLowerCase().split(/[\s,]+/).filter((w) => w.length > 2 && !/^(?:the|and|of)$/.test(w));
+      if (nm && !/^(?:he|she|they|i)$/i.test(nm) && (other ? other.id !== ch.id : !nm.toLowerCase().split(/\s+/).some((w) => words.includes(w)))) break;
+      const fixed = m[0].replace(/\{[^{}\n:]*:$/, "{" + ch.first + (sg != null ? " (" + sg + ")" : "") + ":");
+      body = body.slice(0, at) + fixed + body.slice(at + m[0].length);
+      const close = body.indexOf("}", at), nl = body.indexOf("\n", at + fixed.length);
+      at = close >= 0 && (nl < 0 || close < nl) ? close + 1 : nl >= 0 ? nl : body.length;
+    }
     // any other braces, "{The protagonist laughs}" or "{just happened: ...}" (a key of the AI's own, up to 3 words, is dropped):
     // the log when one was asked for, and out of the story either way (braces never belong in the prose)
     body = body.replace(/\{([^{}\n]{3,})(?:\}[ \t]*|$)/gm, (m, v) => {
@@ -2015,6 +2033,7 @@ const LW = (() => {
     // ponytail: a Continue skips the Input hook, so nothing was asked: the request waits for the next action
     if (W.pendLog.length && (logged || W.asked)) { if (!logged) W.pendLog.forEach((l) => addLog(X, W, l, true)); W.pendLog = []; }   // generic lines are not memories
     W.asked = false;
+    W.thAsk = [];
 
     // thoughts: the AI writes "Name thinks: «...»"; the engine stores it in the card's Notes and, unless
     // thoughts_show is on, removes it from the story text (like Inner Self does)

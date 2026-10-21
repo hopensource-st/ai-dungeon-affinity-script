@@ -382,6 +382,18 @@ const braced = turn("I wait.", "{Mira (=): The glasses never stay clean, and Her
 assert(braced === "Mira sighs." && /^t: The glasses never stay clean, and Hero never notices\.$/m.test(storyCards[0].description) && /^t: Hero should not trust the steward$/m.test(storyCards[1].description), "braced: " + braced);
 assert(G.state.lw.w.log.length === nLogs, "a braced thought is not a log: " + G.state.lw.w.log.slice(nLogs));
 assert(!G.state.lw.w.force.includes("1"), "done once the thought arrives");
+// the thought asked for opens the reply: it is the asked character's, whatever name the AI wrote; a stranger's is not
+for (const [reply, want, ok] of [
+  ["{She (+): Hero kept the promise about the well.}\nMira smiles.", "Hero kept the promise about the well.", true],
+  ["{Lady Mira: Hero should rest before the storm.}\nMira smiles.", "Hero should rest before the storm.", true],
+  ["{(-): Hero laughed at my song again.}\nMira frowns.", "Hero laughed at my song again.", true],
+  ["{The guard: Nobody leaves the inn tonight.}\nMira frowns.", "Nobody leaves the inn tonight.", false],
+]) {
+  run("input", "/think Mira");
+  const shownT = turn("I wait for Mira.", reply);
+  assert(!/[{}]/.test(shownT) && new RegExp("^t: " + want.replace(/[.?]/g, "\\$&") + "$", "m").test(storyCards[0].description) === ok, "by position (" + ok + "): " + shownT + "\n" + storyCards[0].description);
+}
+G.state.lw.w.force = [];
 
 // bare braces with no "log:" key: logged when a log was asked for, and removed from the story
 G.state.lw.w.pendLog = [""];
