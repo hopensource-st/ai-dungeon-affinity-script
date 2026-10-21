@@ -46,8 +46,8 @@ tension_min: 5
 tension_rate: 1
 # the protagonist's name: the chronicle always calls them by it (remove the # and write the name)
 # protagonist: Name
-# early game: introduce the cast during the first 40 actions
-early_actions: 40
+# early game: no nudges to bring in the cast; the arc's first act presents everyone in order (King, Queen, tea, ball, physician)
+early_actions: 0
 chronicle_stats: obsession|attraction
 # thoughts (all of them listed, defaults included, so they are easy to tune)
 # keep: how many stay in each character's Notes | recent: how many of those the AI gets per character
@@ -68,9 +68,9 @@ memories_recent: 2
 memories_context: 2
 # no random ties: the cast is fixed and every tie that matters is written in the Relations card
 bonds: off
-# arc pace: each act lasts at least act_turns actions; beat_gap quiet actions between beats
-act_turns: 50
-beat_gap: 6
+# arc pace: a beat lasts a scene (a time jump, /scene, or scene_len turns), with beat_gap_scenes quiet scenes between beats
+arc_pace: scenes
+beat_gap_scenes: 1
 # cleaner (writing any ban line replaces the default list)
 ban: barely above a whisper | very softly
 ban: sent shivers down her spine | made her shiver
@@ -153,18 +153,23 @@ twist: missing | stages: something personal of the protagonist's goes missing >>
 
 ## Arc card (Type: Arc)
 
-The three-act arc. Fixed beats are the spine of the plot and happen in order; around them, three of every four bank beats in each act are drawn at random each playthrough (`pick 75%`; `pick all` uses every one), and each one still needs its condition, so how you play decides which can happen. Keep `mode hybrid`: `random` could skip a fixed beat whose flag the next one needs. Commands: `/arc`, `/arc next`, `/arc reroll`, `/arc mode`, `/arc act N`.
+The three-act arc. Act 1 opens with the presentations, one occasion per scene: the King on arrival (with Rowan and Mira), the Queen that evening, the Prince and Princess at a tea the next day, Tobin at the stables, the Duke and Seraphine at a ball (it waits for an evening), and Dorian when Elowen falls ill. Fixed beats are the spine of the plot and happen in order; around them, three of every four bank beats in each act are drawn at random each playthrough (`pick 75%`; `pick all` uses every one), and each one still needs its condition, so how you play decides which can happen. Keep `mode hybrid`: `random` could skip a fixed beat whose flag the next one needs. Commands: `/arc`, `/arc next`, `/arc reroll`, `/arc mode`, `/arc act N`.
 
 ```
 Triggers: lw_arc
 Notes:
 arc: The Obsession Spiral | mode hybrid | pick 75% | hold 4
-act: 1 | The Veil | The curse is new and invasive. Keep the mood uneasy and intimate, and give each character a distinct first moment.
+act: 1 | The Veil | The curse is new and invasive. Keep the mood uneasy and intimate, and give each character a distinct first moment. The court is presented in order, one occasion at a time: someone not yet presented stays offstage until their beat.
 act: 2 | The Spiral | The obsession deepens and the court begins to notice. Tension, jealousy, and doubt about what is real.
 act: 3 | The Choice | The curse comes to a head. The protagonist decides whom to trust and who may touch them.
-beat: 1 | fixed | Eyes on You | when: action>=1 | guide: The first stares at court. Make the obsession feel invasive and wrong, never flattering. | sets: first_stares
-beat: 1 | fixed | The First Normal Person | when: flag:first_stares, met>=2 | guide: Someone who resists, or only shows quiet courtesy, stands out sharply (Rowan Hale or Tobin Wren). The protagonist feels a rare, wary relief. | sets: first_calm
-beat: 1 | fixed | The Gift | when: flag:first_calm, action>=40 | guide: A gift arrives that shows far too much knowledge of the protagonist. The sense of being watched grows. | sets: gift_received
+# The presentations: the court meets the protagonist in this order, one occasion per scene
+beat: 1 | fixed | The King's Welcome | when: action>=1 | guide: The protagonist and Elowen arrive at the palace. King Aldric receives them in the throne room as his honored guests, far warmer than a king should be with strangers. He assigns Rowan Hale of the Royal Guard as the protagonist's escort, and Mira, a chambermaid, shows them to their rooms. The first stares at court begin: make the obsession feel invasive and wrong, never flattering. | sets: first_stares
+beat: 1 | fixed | The Queen's Audience | when: flag:first_stares | guide: That evening Queen Octavia summons the protagonist to her private salon, alone. She is gracious, cold and very attentive, studies them like a puzzle, and gives nothing away. Before dismissing them she announces a tea tomorrow to present the King's guest to her children. | sets: met_queen
+beat: 1 | fixed | The Presentation Tea | when: flag:met_queen, day>=2 | guide: The next day, a presentation tea in the palace gardens: the protagonist meets Princess Isolde, all sweet charm and sharp eyes, and Crown Prince Cassian, stiff and correct, who cannot stop looking. Before it ends, a ball is announced in the guest's honor. | sets: met_heirs
+beat: 1 | fixed | The Stables | when: flag:met_heirs | guide: Away from the court, at the royal stables, the protagonist meets Tobin Wren, the stable master. He feels the curse but only grows clumsy and kind; Rowan, at the door, keeps his quiet courtesy. The protagonist feels a rare, wary relief. | sets: first_calm
+beat: 1 | fixed | The Ball | when: flag:first_calm, time:evening or night | guide: The ball in the protagonist's honor. Every eye in the great hall is on them. Two nobles are presented: Evander Thorne, the Duke of Ashmere, all courtesy and calculation, and Lady Seraphine Marrow, Isolde's closest friend, who is charming to the protagonist and watches whoever dances with them. | sets: met_nobles
+beat: 1 | fixed | Elowen Falls Ill | when: flag:met_nobles, day>=3 | guide: Elowen wakes with a fever and cannot get up. The protagonist takes her to the court physician, Dorian Lacroix, in his rooms full of books and instruments. He treats her with care, and studies the protagonist with an interest that is not only medical. Elowen will recover, slowly. | sets: met_physician
+beat: 1 | fixed | The Gift | when: flag:met_physician | guide: A gift arrives that shows far too much knowledge of the protagonist. The sense of being watched grows. | sets: gift_received
 beat: 1 | bank | An Unwanted Escort | when: any obsession>=2 | guide: Someone insists on accompanying the protagonist everywhere, with a polite excuse that does not hold up.
 beat: 1 | bank | The Stolen Glance | when: met>=3, prob 25 | guide: The protagonist catches someone staring from across a room, and they do not look away.
 beat: 1 | bank | Kindness Without Hunger | when: any trust>=4 | guide: Someone shows the protagonist a small kindness that wants nothing back, and it is disarming.
