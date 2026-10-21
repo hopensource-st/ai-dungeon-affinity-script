@@ -59,7 +59,7 @@ thoughts_recent: 1
 thoughts_context: 2
 thoughts_interval: 4
 thoughts_max: 1
-thoughts_words: 12
+thoughts_words: 20
 thoughts_show: off
 # memories: chronicle entries that name a character stay in their Notes (m: lines)
 # keep: how many per character | recent: how many the AI gets | context: from how many characters | recent 0 turns it off
