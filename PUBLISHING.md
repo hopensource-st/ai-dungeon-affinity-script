@@ -19,7 +19,10 @@ Desde el parche 2.39.0 (agosto de 2026), AI Dungeon tiene **Scripts como conteni
 ### Al actualizar
 1. Sube el número en `const VERSION = "1.0.0"` (línea 8 de `library.js`): `1.0.1` para arreglos, `1.1.0` para funciones nuevas.
 2. Pega el nuevo `library.js` en el Script y guarda.
-3. Comprueba con `/check` en una partida que la versión ha cambiado.
+3. Pega el mismo `library.js` en la pestaña Library de **The Cursed Court** (y de cualquier escenario tuyo que lleve el motor pegado).
+4. Comprueba con `/check` en una partida que la versión ha cambiado.
+
+> Un Script publicado que alguien adjunta a su escenario o partida **no se actualiza solo**: se queda en la versión que tenía al adjuntarlo (comprobado con `/check`, octubre de 2026). Quien quiera la nueva tiene que volver a adjuntarlo. En cambio, lo que se pega en las pestañas de scripts de un escenario llega también a las partidas ya empezadas desde él (según la ayuda de AI Dungeon), por eso The Cursed Court lleva el motor pegado.
 
 ---
 
@@ -131,7 +134,7 @@ Before the story begins, tell it who you are and where you stand. Write your fir
 
 # Publicar el escenario The Cursed Court
 
-El escenario usa el motor (pega los cuatro archivos en su Scripting, o añade el Script publicado) y las tarjetas de [`examples/cursed-court.md`](examples/cursed-court.md). **No pongas el giro final en ningún texto público:** solo vive en el beat *The Queen's Confession* de la tarjeta Arc.
+El escenario lleva el motor **pegado** en su Scripting (los cuatro archivos), no el Script publicado adjunto: así cada actualización que pegas llega también a las partidas en curso. Usa además las tarjetas de [`examples/cursed-court.md`](examples/cursed-court.md). **No pongas el giro final en ningún texto público:** solo vive en el beat *The Queen's Confession* de la tarjeta Arc.
 
 ### Título
 ```
