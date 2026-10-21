@@ -26,6 +26,8 @@ modifier(text)
 
 The engine uses `state.memory.frontMemory` to talk to the AI. If another script overwrites it, the engine notices and puts its line into the context text instead, cutting the oldest story text when the context is full (`/check` says so). If thoughts still never appear, add `inject: text` to the Config card to always use the context text.
 
+Inner Self, MindForge and Memory Palace do the same job as this engine's thoughts and memories: running one of them alongside it, both ask the AI for thoughts and fill the context with two copies of them. Use one or the other.
+
 ## What happens on the first turn
 
 The engine creates five cards of its own. Their triggers (`lw_config`, ...) never appear in the story, so the AI never reads them. Everything lives in their **Notes**:
