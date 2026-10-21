@@ -133,7 +133,7 @@ beat: 1 | bank | A Rival | when: met>=3 | guide: Someone resents the attention t
 
 `pick` is how many bank beats each act draws: a number (`pick 2`), a share of that act's bank (`pick 75%`) or `pick all`. An act does not end until its drawn bank beats have happened too, unless one never fits: then the act moves on after twice `act_scenes`.
 
-Beats, events and twists can also carry `adds: obsession+1.5, attraction+1`: when they end, those stats rise (or fall, with a minus) for everyone who appeared while they ran, whatever the stat's `needs`. A public performance or a ball that makes everyone more fixated is one line.
+Beats, events and twists can also carry `adds: obsession+1.5, attraction+1`: when they end, those stats rise (or fall, with a minus) for everyone who appeared while they ran, whatever the stat's `needs`; in a twist, `who.fear+2` is for the twist's own character only, here or not. A public performance or a ball that makes everyone more fixated is one line.
 
 Conditions (comma-separated): `action>=30`, `day>=3`, `actscene>=8` (scenes since this act began), `time:evening`, `flag:x`, `!flag:x`, `fired:id`, `met:Name`, `present:Name`, `met>=3`, `Name.stat>=N`, `any stat>=N`, `prob 20`. The AI may also write `{flag:x}`, `{event:id}`, `{log:text}` or `{beat}`; the engine acts on them and removes them.
 

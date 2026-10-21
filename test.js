@@ -508,6 +508,15 @@ const whos2 = new Set();
 for (let i = 0; i < 10; i++) { G.state.lw.w.tw = null; turn("/twist shrine", "Nothing."); whos2.add(G.state.lw.w.tw && G.state.lw.w.tw.who); }
 assert(!whos2.has("The Crowd") && whos2.size >= 1, "a crowd is never a twist's one person: " + [...whos2]);
 G.state.lw.w.tw = null;
+// who.stat in a twist's adds: only the twist's own character, here or not
+evCard.description += "\ntwist: spied | who: obsession>=5 | weight 0 | hold 1 | stages: {who} is caught spying on the protagonist | adds: who.affinity-2";
+G.state.lw.rel[crowdId].s.obsession = 0;
+turn("/twist spied", "Nothing.");
+const spy = G.state.lw.w.tw.who, spyId = spy === "Mira" ? "1" : "2", otherId = spy === "Mira" ? "2" : "1";
+const aSpy = G.state.lw.rel[spyId].s.affinity, aOther = G.state.lw.rel[otherId].s.affinity;
+for (let i = 0; i < 3 && G.state.lw.w.tw; i++) turn("I wait.", "Nothing.");
+assert(!G.state.lw.w.tw && G.state.lw.rel[spyId].s.affinity <= aSpy - 1.9 && G.state.lw.rel[otherId].s.affinity === aOther,
+  "who.affinity-2 only for " + spy + ": " + aSpy + " -> " + G.state.lw.rel[spyId].s.affinity + ", other " + aOther + " -> " + G.state.lw.rel[otherId].s.affinity);
 storyCards.splice(storyCards.findIndex((c) => c.id === 301), 1);
 evCard.description = evBefore;
 
@@ -515,5 +524,27 @@ evCard.description = evBefore;
 storyCards[0].description = storyCards[0].description.replace("\nLW>>", "").replace(/^affinity: [\d.]+$/m, "affinity: 3.0");
 turn("I wait.", "Mira hums.");
 assert(G.state.lw.rel["1"].s.affinity === 3 && (storyCards[0].description.match(/<<LW/g) || []).length === 1 && /\nLW>>$/.test(storyCards[0].description), "broken block mended:\n" + storyCards[0].description);
+
+// the Cursed Court example loads whole: every card found, every condition of its arc and events readable
+{
+  const md = fs.readFileSync(__dirname + "/examples/cursed-court.md", "utf8");
+  const block = (h) => { const a = md.indexOf("```", md.indexOf(h)) + 3; return md.slice(a, md.indexOf("```", a)).replace(/^\s*Triggers:[^\n]*\r?\nNotes:\r?\n/, ""); };
+  const cards = [
+    { id: 1, keys: "lw_config", entry: "", type: "Config", title: "LW Config", description: block("## Config card") },
+    { id: 2, keys: "lw_relations", entry: "", type: "Relations", title: "LW Relations", description: block("## Relations card") },
+    { id: 3, keys: "lw_chronicle", entry: "", type: "Chronicle", title: "LW Chronicle", description: block("## Chronicle card") },
+    { id: 4, keys: "lw_events", entry: "", type: "Events", title: "LW Events", description: block("## Events card") },
+    { id: 5, keys: "lw_arc", entry: "", type: "Arc", title: "LW Arc", description: block("## Arc card") },
+  ];
+  for (const m of md.slice(md.indexOf("## Character cards")).matchAll(/```\r?\nTriggers: ([^\n]*)\r?\nNotes: ([\s\S]*?)\r?\nEntry:\r?\n([^\n]*)\r?\n```/g))
+    cards.push({ id: cards.length + 1, keys: m[1].trim(), entry: m[3].trim(), type: "character", title: m[1].split(",")[0].trim(), description: m[2].trim() });
+  const C = { state: { memory: {} }, info: { actionCount: 1, maxChars: 8000 }, history: [], storyCards: cards, log: () => {},
+    addStoryCard: () => 0, updateStoryCard: () => {} };
+  const cctx = vm.createContext(C);
+  const crun = (name, text) => { cctx.text = text; return vm.runInContext("(() => {\n" + lib + "\n" + hook(name).replace(/modifier\(text\)\s*$/, "return modifier(text)") + "\n})()", cctx); };
+  crun("input", "I arrive at the palace."); crun("context", "Story."); crun("output", "The gates open.");
+  const check = crun("input", "/check").text;
+  assert(/Characters 13\b/.test(check) && /unreadable conditions 0\b/.test(check) && /arc beats [1-9]\d+/.test(check), "Cursed Court loads: " + check);
+}
 
 console.log("ok");

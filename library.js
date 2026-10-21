@@ -908,9 +908,10 @@ const LW = (() => {
     return { pos, f };
   };
   const setList = (v) => String(v || "").split(",").map(slug).filter(Boolean);
-  // adds: obsession+1.5, attraction+1 (what a beat, event or twist does to everyone who was there)
-  const addList = (v) => String(v || "").split(",").map((x) => x.trim().match(/^(\w+)\s*([+-]\s*[\d.]+)$/)).filter(Boolean)
-    .map((m) => ({ stat: m[1].toLowerCase(), n: num(m[2].replace(/\s/g, ""), 0) }));
+  // adds: obsession+1.5, attraction+1 (what a beat, event or twist does to everyone who was there);
+  // in a twist, who.fear+2 is for the twist's own character only
+  const addList = (v) => String(v || "").split(",").map((x) => x.trim().match(/^(who\.)?(\w+)\s*([+-]\s*[\d.]+)$/i)).filter(Boolean)
+    .map((m) => ({ who: !!m[1], stat: m[2].toLowerCase(), n: num(m[3].replace(/\s/g, ""), 0) }));
 
   const newW = () => ({
     flags: {}, fired: {}, log: [], day: 1, tod: 0, inited: false, ct: 0, sc: { n: 1, t: 0 }, ev: {}, act: 1, bt: null,
@@ -1219,12 +1220,15 @@ const LW = (() => {
     return cx.bad;
   };
 
-  const applyAdds = (X, L, adds, ids) => {
+  const applyAdds = (X, L, adds, ids, who) => {
     if (!adds || !adds.length) return;
+    const wch = who ? findChar(X, who) : null;
+    if (wch && !(ids || []).includes(wch.id)) ids = (ids || []).concat(wch.id);     // the twist's character, even if absent
     for (const id of ids || []) {
       const ch = X.byId[id], r = L.rel[id];
       if (!ch || !r) continue;
       for (const a of adds) {
+        if (a.who && (!wch || wch.id !== id)) continue;
         const d = activeStats(X, ch).find((x) => x.name === a.stat);    // romance:no characters get no attraction
         if (d && r.s[d.name] != null) r.s[d.name] = clamp(r.s[d.name] + a.n, d.min, d.max);
       }
@@ -1379,7 +1383,7 @@ const LW = (() => {
       W.tw.st++; W.tw.at = cx.turn;
       if (W.tw.st <= t.stages.length) return;
       for (const f of t.sets) W.flags[f] = 1;
-      applyAdds(X, L, t.adds, W.tw.seen || cx.present);
+      applyAdds(X, L, t.adds, W.tw.seen || cx.present, W.tw.who);
       W.pendLog.push("");     // logged by the AI, as it really happened (the planned text may not have)
       W.tw = null; W.twEnd = cx.turn;
       return;
