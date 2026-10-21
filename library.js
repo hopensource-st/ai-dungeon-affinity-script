@@ -1367,8 +1367,13 @@ const LW = (() => {
   // ponytail: word stems and a 2-word negation window; irony and unnamed pronouns ("you insult her") are missed
   const NEGATION = /(?:\bnot|\bnever|\bno|n['’]t|\bwithout)\s+(?:\w+\s+)?$/i;
   // ch can be a list: then only sentences naming all of them count (a quarrel or a kind moment between two characters)
+  // a character's mood only moves with sentences that also name the protagonist (you, I, or the protagonist: name);
+  // a pair's tension (two characters) counts any sentence naming both
+  const PROTAG = /\b(?:you|your|yours|yourself|me|my|mine|myself|the protagonist)\b/i;
   const moodScore = (X, ch, text) => {
     const chs = [].concat(ch);
+    const hero = String(X.cfg.s.protagonist || "").trim();
+    const withHero = (sent) => chs.length > 1 || PROTAG.test(sent) || /\bI\b/.test(sent) || (!!hero && new RegExp("\\b" + esc(hero) + "\\b", "i").test(sent));
     let sc = 0;
     const hits = (words, sent, v) => {
       if (!words) return;
@@ -1377,7 +1382,7 @@ const LW = (() => {
       while ((m = re.exec(sent)) !== null) sc += NEGATION.test(sent.slice(Math.max(0, m.index - 24), m.index)) ? -v : v;
     };
     for (const sent of String(text).split(/(?<=[.!?])\s+|\n+/)) {
-      if (chs.some((c) => lastPos(c, sent) < 0)) continue;
+      if (chs.some((c) => lastPos(c, sent) < 0) || !withHero(sent)) continue;
       hits(X.cfg.s.mood_pos, sent, 1);
       hits(X.cfg.s.mood_neg, sent, -1);
     }

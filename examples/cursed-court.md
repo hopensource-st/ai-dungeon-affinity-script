@@ -1,6 +1,6 @@
 # Example scenario: The Cursed Court
 
-A complete setup for one story (a cursed protagonist at a royal court) that uses every engine feature: its own stats (an obsession that always grows, trust and attraction that follow the mood of each scene, fear), the touch-consent module, written ties plus a court bond deck, secret events plus a court twist deck, and a three-act arc with fixed beats and random ones. The engine itself is generic: see the README to use it in any adventure.
+A complete setup for one story (a cursed protagonist at a royal court) that uses every engine feature: its own stats (an obsession that always grows, trust and attraction that follow the mood of each scene, fear), the touch-consent module, written ties (and no random bonds), secret events plus a court twist deck, and a three-act arc with fixed beats and random ones. The engine itself is generic: see the README to use it in any adventure.
 
 How to use: create each card in the scenario editor under Story Cards. Set the card Type exactly as shown in each header (the engine finds its own cards by Type). Each block has up to three parts:
 - `Triggers:` goes in the Triggers field.
@@ -66,8 +66,8 @@ thoughts_show: off
 memories_keep: 8
 memories_recent: 2
 memories_context: 2
-# random ties between characters with no written tie: rare, and only from the court deck in the Relations card
-bond_chance: 40
+# no random ties: the cast is fixed and every tie that matters is written in the Relations card
+bonds: off
 # arc pace: each act lasts at least act_turns actions; beat_gap quiet actions between beats
 act_turns: 50
 beat_gap: 6
@@ -84,7 +84,7 @@ ban: a testament to | proof of
 
 ## Relations card (Type: Relations)
 
-Written ties first (the AI is told a tie only while both characters are in the scene), then the court bond deck: the first time two characters with no tie share a scene, there is a `bond_chance` % chance of drawing one. No family bonds in this deck, because the family tree is fixed. The engine keeps rivalry numbers in a `<<LWR` block at the bottom.
+Written ties only (the AI is told a tie only while both characters are in the scene): with a fixed cast, a random bond could tie two people the story keeps apart, so `bonds: off` in the Config card. The engine keeps rivalry numbers in a `<<LWR` block at the bottom.
 
 ```
 Triggers: lw_relations
@@ -108,16 +108,7 @@ Evander | Cassian | distrust each other
 Dorian | Octavia | her trusted advisor, whom she secretly fears
 Elowen | Aldric | he once loved her briefly; now they share the secret of their child and pretend at court that the protagonist is only a guest
 Elowen | Hespera | Hespera was her nursemaid when she was a child
-# Court bond deck: bond: id | weight N | text ({a} and {b} become the two names)
-bond: acquainted | weight 3 | {a} and {b} know each other only from court ceremonies
-bond: allies | weight 2 | {a} and {b} are quiet allies at court
-bond: rivals | weight 2 | {a} and {b} compete for favor at court
-bond: debt | {a} owes {b} a favor that has never been repaid
-bond: grudge | {a} holds a quiet grudge against {b} over an old slight
-bond: distrust | {a} does not trust {b} and watches them closely
-bond: informant | {a} passes {b} gossip from the palace corridors
-bond: confidant | {a} confides in {b} about their feelings for the protagonist
-bond: disapproves | {a} disapproves of how close {b} is getting to the protagonist
+Octavia | Elowen | the Queen knows Elowen bore the King's child; cold courtesy in public, enmity in private
 ```
 
 ## Chronicle card (Type: Chronicle)
