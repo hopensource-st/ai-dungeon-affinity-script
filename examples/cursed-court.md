@@ -275,11 +275,13 @@ Put this in the Notes field of your existing protagonist card so the engine igno
 [cfg skip]
 ```
 
-And write the protagonist's greatest talent in its Entry: in act 1 the Queen makes them perform it before the whole court. For example:
+And write the protagonist's greatest talent in its Entry: in act 1 the Queen makes them perform it before the whole court. In a published scenario, let each player choose it with an AI Dungeon placeholder, which asks them when the adventure starts:
 
 ```
-Fiona's greatest talent is the fire dance.
+${character.name}'s greatest talent is ${What is your greatest talent? (a dance, a song, swordplay, an instrument...)}.
 ```
+
+Playing it yourself, just write it: `Fiona's greatest talent is the fire dance.`
 
 ## Character cards (Type: Character)
 
