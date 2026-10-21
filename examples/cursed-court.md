@@ -126,7 +126,7 @@ Notes:
 
 ## Events card (Type: Events)
 
-The five hidden plot threads, one public event, one random moment, and a court twist deck. Events follow their conditions; twists are drawn now and then and fitted to whoever is in the scene (`who: high` = someone who likes the protagonist, `low` = someone who does not, `any`, `absent`). The AI only hints at a secret until its last stage.
+The five hidden plot threads, one public event, one random moment, and a court twist deck. Events follow their conditions; twists are drawn now and then and fitted to whoever is in the scene (`who: high` = someone who likes the protagonist, `low` = someone who does not, `any`, `absent`, `obsession>=4` = anyone already met that obsessed, at random, so it is not always the Queen). The AI only hints at a secret until its last stage.
 
 ```
 Triggers: lw_events
@@ -143,9 +143,9 @@ event: winter_journey | secret | when: act>=2, met>=6, prob 15 | stages: An old 
 event: court_rumors | public | when: flag:rumors, prob 40 | stages: Whispers of witchcraft spread through the court; servants fall silent when the protagonist passes >> Someone openly repeats the rumor within the protagonist's hearing | hold 4 | sets: rumors_spread | log: Rumors of witchcraft are now openly spoken at court.
 event: quiet_hour | random | when: action>=30, time:evening, prob 8 | stages: An unplanned, quiet moment: no one demands anything of the protagonist for a while, and the silence feels strange | hold 2
 # Court twist deck: twist: id | who: high/low/any/absent | when: conditions | weight N | stages: hint >> it happens
-twist: shadowed | who: high | weight 2 | stages: {who} has been following the protagonist through the palace corridors >> {who} is caught watching, and has an excuse ready
-twist: letter | who: high | stages: {who} writes the protagonist a letter that says far too much
-twist: keepsake | who: high | stages: {who} has taken something small that belongs to the protagonist and keeps it close
+twist: shadowed | who: obsession>=4 | weight 2 | stages: {who} has been following the protagonist through the palace corridors >> {who} is caught watching, and has an excuse ready
+twist: letter | who: obsession>=4 | stages: {who} writes the protagonist a letter that says far too much
+twist: keepsake | who: obsession>=4 | stages: {who} has taken something small that belongs to the protagonist and keeps it close
 twist: cold_shoulder | who: low | stages: {who} turns cold toward the protagonist and will not say why >> the reason comes out
 twist: quiet_favor | who: any | stages: {who} quietly does the protagonist a favor at some cost to themselves
 twist: summons | who: absent | stages: {who} sends a formal summons that cannot politely be refused

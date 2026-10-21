@@ -104,7 +104,7 @@ const LW = (() => {
   // the twist deck and the arc written to the Events and Arc cards on first run; generic so the AI fits them to any story
   const DECK = [
     "# Twist deck. The engine draws one now and then, picks who it is about, and the AI fits it to the story.",
-    "# twist: id | who: low (dislikes the protagonist), high (likes them), any (in the scene), absent (met, not here) | when: conditions | weight N | hold N | stages: hint >> it happens | log: text",
+    "# twist: id | who: low (dislikes the protagonist), high (likes them), any (in the scene), absent (met, not here), obsession>=5 (anyone met with that stat, at random) | when: conditions | weight N | hold N | stages: hint >> it happens | log: text",
     "# Delete a line to remove a twist; weight 0 disables it; add your own lines. You can also add event: lines (see the README).",
     "twist: secret | who: low | weight 2 | stages: {who} is hiding something that concerns the protagonist; show it only in small slips >> {who}'s secret comes out, and it changes things",
     "twist: betrayal | who: low | when: met>=2 | stages: {who} is quietly working against the protagonist; leave subtle clues >> {who}'s betrayal is revealed or carried out",
@@ -1309,11 +1309,18 @@ const LW = (() => {
     if (!r) return 0.5;
     const ds = activeStats(X, ch).filter((d) => d.mode === "auto" && !d.steady);
     if (!ds.length) return 0.5;
-    return ds.reduce((n, d) => n + (r.s[d.name] - d.min) / ((d.max - d.min) || 1), 0) / ds.length;
+    // a stat with a negative rate (fear) counts the other way round: high fear is a bad feeling, not a good one
+    return ds.reduce((n, d) => { const v = (r.s[d.name] - d.min) / ((d.max - d.min) || 1); return n + (d.rate < 0 ? 1 - v : v); }, 0) / ds.length;
   };
   // the character a twist is about: "" when it needs nobody, null when nobody fits
   const twistWho = (X, L, cx, kind, R) => {
     if (!kind) return "";
+    // who: obsession>=5 picks at random among everyone already met (here or not) whose stat holds
+    const st = kind.match(/^(\w+)\s*(>=|<=|>|<)\s*(-?[\d.]+)$/);
+    if (st) {
+      const met = X.roster.filter((c) => L.rel[c.id] && L.rel[c.id].scenes > 0 && L.rel[c.id].s[st[1]] != null && cmp(L.rel[c.id].s[st[1]], st[2], num(st[3], 0)));
+      return met.length ? met[Math.floor(R() * met.length)].first : null;
+    }
     const pool = kind === "absent"
       ? X.roster.filter((c) => !cx.present.includes(c.id) && L.rel[c.id] && L.rel[c.id].scenes > 0)
       : cx.present.map((id) => X.byId[id]).filter((c) => c && (kind === "low" ? feel(X, L, c) <= 0.35 : kind === "high" ? feel(X, L, c) >= 0.6 : true));

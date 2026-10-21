@@ -479,6 +479,21 @@ turn("I look at Mira.", "Mira hums.");
 assert(dread() < d0, "dread eases with high affinity: " + d0 + " -> " + dread());
 dreadCfg.description = cfgBefore;
 
+// who: obsession>=5 picks at random among those met whose obsession holds, here or not
+const evCard = storyCards.find((c) => c.type === "events"), evBefore = evCard.description;
+evCard.description += "\ntwist: shrine | who: obsession>=5 | weight 0 | stages: {who} keeps a hidden shrine to the protagonist";
+for (const id of Object.keys(G.state.lw.rel)) G.state.lw.rel[id].s.obsession = 0;
+G.state.lw.rel["1"].s.obsession = 6; G.state.lw.rel["2"].s.obsession = 6;
+const whos = new Set();
+for (let i = 0; i < 12; i++) {
+  G.state.lw.w.tw = null;
+  turn("/twist shrine", "Nothing.");
+  whos.add(G.state.lw.w.tw && G.state.lw.w.tw.who);
+}
+assert(whos.size === 2 && whos.has("Mira") && whos.has("Tobin"), "obsession pick, at random among the obsessed: " + [...whos]);
+G.state.lw.w.tw = null;
+evCard.description = evBefore;
+
 // a block whose LW>> was deleted by hand: the edited number is adopted and the block closed again
 storyCards[0].description = storyCards[0].description.replace("\nLW>>", "").replace(/^affinity: [\d.]+$/m, "affinity: 3.0");
 turn("I wait.", "Mira hums.");
