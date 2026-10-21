@@ -459,6 +459,19 @@ assert(/^m: [^\n]*gave Mira a silver ring — «Nobody ever gave me anything thi
 assert(/^m: [^\n]*gave Mira a silver ring\.?$/m.test(storyCards[1].description), "Tobin witnessed it:\n" + storyCards[1].description);
 G.state.lw.w.force = [];
 
+// a negative rate runs against the mood: dread rises when Mira is cruel to the protagonist, falls when she is kind
+const dreadCfg = storyCards.find((c) => c.type === "config"), cfgBefore = dreadCfg.description;
+dreadCfg.description += "\nstat: dread | auto | 0-10 | start 3 | rate -0.5";
+turn("I look at Mira.", "Mira hums.");
+const dread = () => G.state.lw.rel["1"].s.dread;
+let d0 = dread();
+turn("I ask Mira for a drink.", "Mira sneers and mocks you.");
+assert(dread() > d0, "dread up after cruelty: " + d0 + " -> " + dread());
+d0 = dread();
+turn("I thank Mira.", "Mira smiles at you warmly.");
+assert(dread() < d0, "dread down after kindness: " + d0 + " -> " + dread());
+dreadCfg.description = cfgBefore;
+
 // a block whose LW>> was deleted by hand: the edited number is adopted and the block closed again
 storyCards[0].description = storyCards[0].description.replace("\nLW>>", "").replace(/^affinity: [\d.]+$/m, "affinity: 3.0");
 turn("I wait.", "Mira hums.");

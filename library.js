@@ -2186,11 +2186,12 @@ const LW = (() => {
       const mood = moodOf(X, ch, moodText, found.find((f) => f.ch.id === id));
       for (const d of activeStats(X, ch)) {
         const rate = rateOf(d, ch) || (d.steady && r.yr) || 0;     // r.yr: a secret yandere's obsession rate
-        if (d.mode !== "auto" || rate <= 0) continue;
+        // a negative rate runs against the mood (fear: up when they treat the protagonist badly, down when kindly)
+        if (d.mode !== "auto" || !rate || (rate < 0 && (d.steady || !X.cfg.s.mood))) continue;
         if ((d.steady || !X.cfg.s.mood) && !newScene) continue;
         const f = X.cfg.s.mood && !d.steady ? mood : 1;
         if (!f) continue;
-        if (f > 0 && d.needs && !cmp(snapshot[d.needs.stat] != null ? snapshot[d.needs.stat] : 0, d.needs.op, d.needs.val)) continue;
+        if (rate * f > 0 && d.needs && !cmp(snapshot[d.needs.stat] != null ? snapshot[d.needs.stat] : 0, d.needs.op, d.needs.val)) continue;
         const delta = rate * accel * f * (d.damp && damped ? X.cfg.s.damp_factor : 1);
         r.s[d.name] = clamp(r.s[d.name] + delta, d.min, d.max);
       }
