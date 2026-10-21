@@ -414,6 +414,9 @@ assert(/Mira remembers: [^\]]*\(Day \d+\) Mira forgave the protagonist/.test(G.s
 for (const l of ["Mira sang for the guests.", "Mira swept the cellar.", "The miller left.", "A cart broke down.", "The bell rang."]) turn("/log " + l, "Nothing.");
 turn("I hand Mira a new lamp.", "Mira hums.");
 assert(/Mira remembers: [^\]]*broken lamp/.test(G.state.memory.frontMemory) && !/Mira sang/.test(G.state.memory.frontMemory), "cue word brings back the lamp: " + G.state.memory.frontMemory);
+// salience: once Notes are full, a recalled memory outlives older and newer ones never recalled
+for (let i = 0; i < 9; i++) turn("/log Mira counted coins, round " + i + ".", "Nothing.");
+assert(/^m: [^\n]*broken lamp/m.test(storyCards[0].description) && !/^m: [^\n]*cellar/m.test(storyCards[0].description), "recalled memory kept:\n" + storyCards[0].description);
 
 // another script overwrites frontMemory and the context is full: the line goes into the context text, cutting the oldest story
 G.info.actionCount++;

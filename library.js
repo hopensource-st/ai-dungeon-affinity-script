@@ -659,6 +659,10 @@ const LW = (() => {
         // the ones that share the most words with the scene, then the newest; told in the order they happened
         const pick = mem.map((m, i) => ({ m, i, hits: [...cues(X, m.replace(/^\([^)]*\) /, ""))].filter((w) => scene.has(w)).length }))
           .sort((a, b) => b.hits - a.hits || b.i - a.i).slice(0, s.memories_recent).sort((a, b) => a.i - b.i);
+        // salience: a memory brought back by the scene counts as recalled, and outlives the ones never recalled
+        // ponytail: counted once per turn it is sent, so a long scene about it counts many times
+        const mr = r.mr || (r.mr = {});
+        for (const p of pick) if (p.hits) mr[p.m] = (mr[p.m] || 0) + 1;
         add(4, X.byId[id].first + " remembers: " + pick.map((p) => p.m.slice(0, 160)).join(" "));
         n++;
       }
@@ -1121,7 +1125,15 @@ const LW = (() => {
     for (const ch of X.roster) {
       const r = L.rel[ch.id];
       if (!r || lastPos(ch, m) < 0) continue;
-      r.mem = (r.mem || []).filter((o) => o !== m).concat(m).slice(-X.cfg.s.memories_keep);
+      r.mem = (r.mem || []).filter((o) => o !== m).concat(m);
+      // full: the memory recalled least often goes (the oldest of those), never the new one
+      const mr = r.mr || (r.mr = {});
+      while (r.mem.length > Math.max(1, X.cfg.s.memories_keep)) {
+        let k = 0;
+        for (let i = 1; i < r.mem.length - 1; i++) if ((mr[r.mem[i]] || 0) < (mr[r.mem[k]] || 0)) k = i;
+        delete mr[r.mem[k]];
+        r.mem.splice(k, 1);
+      }
       persist(X, L, ch);
     }
   };
