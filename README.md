@@ -104,6 +104,7 @@ The Config card lists every setting. The most useful:
 - `contact: on` enables the touch-consent module (characters may only touch the protagonist when the player writes it).
 - `early_actions: 40` nudges the AI to introduce characters who have not appeared yet during the first 40 actions (off by default, `0`).
 - `bring_in: 5`: every 5 turns of a scene with only one or two characters, for two turns, the AI is asked to have someone already met who has been away the longest interrupt, wanting the protagonist's attention, and keep it quick. Off by default (`0`); it never brings in someone unmet, so an arc that presents the cast keeps its order.
+- Scenes: the AI is told where the scene stands (setup, complication, climax over `scene_len: 6` turns). Past that it is told to end the scene in that reply and open the next one later, with words like "Later that day" or "That evening", which also close it for the engine; that line is never dropped to save room. `scene: off` turns the scene lines off.
 
 ### Ties between characters
 

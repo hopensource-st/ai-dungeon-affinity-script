@@ -479,6 +479,12 @@ run("input", "/scene");
 const asks = [];
 for (let i = 0; i < 6; i++) { turn("I talk with Mira.", "Mira talks with you."); G.info.actionCount++; run("input", "I listen to Mira."); G.info.actionCount--; asks.push(/Have (?!Mira|Tobin)\w+ interrupt now/.test(G.state.memory.frontMemory)); }
 assert(asks.join() === "false,false,true,true,false,true", "bring_in nudges after 3 and 6 turns: " + asks.join());
+// a scene running long is told to end with words of time, even when the line is short of room
+bringCfg.description = bringBefore + "\ninject_max: 300";
+run("input", "/scene");
+for (let i = 0; i < 6; i++) turn("I talk with Mira.", "Mira talks with you.");
+G.info.actionCount++; run("input", "I listen to Mira."); G.info.actionCount--;
+assert(/running long\. End it in this reply[^\]]*Later that day/.test(G.state.memory.frontMemory), "scene told to end: " + G.state.memory.frontMemory);
 bringCfg.description = bringBefore;
 
 // a negative rate runs against the mood: dread rises when Mira is cruel to the protagonist, falls when she is kind

@@ -81,7 +81,7 @@ const LW = (() => {
       scene_setup: "Scene: setup. Establish the place and what each character wants; let tension build.",
       scene_mid: "Scene: complication. Something goes wrong, is said, or is revealed.",
       scene_end: "Scene: climax. Bring it to a peak, then settle on a hook.",
-      scene_over: "Scene: running long. Close it with a change of time or place.",
+      scene_over: "Scene: running long. End it in this reply and open the next scene later, with words like 'Later that day', 'That evening' or 'The next morning'.",
       // arc_pace: scenes (a beat starts with a scene and is done when it closes; acts last act_scenes) or turns (beat_hold, beat_gap, act_turns)
       // a scene closes on a time jump, on /scene, or every scene_len turns of a long one
       arc_pace: "scenes", beat_gap_scenes: 1, act_scenes: 4,
@@ -615,7 +615,8 @@ const LW = (() => {
     if (tw && tw.stages[W.tw.st - 1])
       add(2, (W.tw.st < tw.stages.length ? "Twist (only hint at it): " : "Twist (make it happen now): ") +
         twistFill(tw.stages[W.tw.st - 1], W.tw.who) + ".");
-    if (s.scene) add(4, s[{ setup: "scene_setup", mid: "scene_mid", end: "scene_end", over: "scene_over" }[scenePhase(X, W)]]);
+    // a scene running long is told to end, and that line is never dropped for length: words of time close it for the engine too
+    if (s.scene) { const ph = scenePhase(X, W); add(ph === "over" ? 1 : 4, s["scene_" + ph]); }
     const feel = {};                                          // same feelings, one line: "Mira and Tobin: ..."
     for (const id of ids) {
       const ch = X.byId[id], r = L.rel[id];
