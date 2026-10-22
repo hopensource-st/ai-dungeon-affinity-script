@@ -21,7 +21,9 @@ Notes:
 # The Cursed Court: only the settings that differ from the engine defaults.
 # stat: name | auto or manual | min-max | start N | rate N | flags
 # obsession is the pull everyone feels toward the protagonist: it always rises while they are together (steady), at each character's own rate.
-# trust and attraction move with the mood of each scene: up when it goes well, down when it goes badly.
+# trust and attraction move with the mood of each scene: up when it goes well, down when it goes badly,
+# and a little on every quiet action together (mood_neutral: half the rate), so time shared counts unless it goes badly.
+mood_neutral: 0.5
 stat: obsession | auto | 0-10 | start 0 | rate 0.3 | damp | steady | keep
 stat: trust | auto | 0-10 | start 3 | rate 0.12 | damp
 # direction: obsession, trust and attraction are what each character feels toward the protagonist; fear is the other way round,
@@ -52,6 +54,8 @@ tension_rate: 1
 # protagonist: Name
 # early game: no nudges to bring in the cast; the arc's first act presents everyone in order (King, Queen, tea, ball, physician)
 early_actions: 0
+# a scene alone with one character for 8 turns brings in someone already met who has shared the fewest scenes with the protagonist
+bring_in: 8
 chronicle_stats: obsession|attraction
 # thoughts (all of them listed, defaults included, so they are easy to tune)
 # keep: how many stay in each character's Notes | recent: how many of those the AI gets per character
@@ -180,11 +184,11 @@ act: 3 | The Truth | Everything comes to a head: each person shows what they tru
 beat: 1 | fixed | The King's Welcome | when: action>=1 | guide: The protagonist and Elowen arrive at the palace. King Aldric receives them in the throne room as his honored guests, far warmer than a king should be with strangers. Mira, a chambermaid, shows them to their rooms. The first stares at court begin: make the obsession feel invasive and wrong, never flattering. | sets: first_stares
 beat: 1 | fixed | The Sworn Escort | when: flag:first_stares | guide: King Aldric sends for the protagonist and presents Rowan Hale, a knight of the Royal Guard, as their sworn escort from now on. Rowan kneels and gives his oath. He feels the pull and answers it with stiff, careful courtesy, keeping a proper distance. | sets: met_escort
 beat: 1 | fixed | The Queen's Audience | when: flag:met_escort | guide: That evening Queen Octavia summons the protagonist to her private salon, alone. She is gracious, cold and very attentive, studies them like a puzzle, and gives nothing away. Before dismissing them she announces a tea tomorrow to present the King's guest to her children. | sets: met_queen
-beat: 1 | fixed | The Presentation Tea | when: flag:met_queen, day>=2 | guide: The next day, a presentation tea in the palace gardens: the protagonist meets Princess Isolde, all sweet charm and sharp eyes, and Crown Prince Cassian, stiff and correct, who cannot stop looking. Before it ends, a ball is announced in the guest's honor. | sets: met_heirs | adds: obsession+0.5
+beat: 1 | fixed | The Presentation Tea | when: flag:met_queen | guide: The next day, a presentation tea in the palace gardens: the protagonist meets Princess Isolde, all sweet charm and sharp eyes, and Crown Prince Cassian, stiff and correct, who cannot stop looking. Before it ends, a ball is announced in the guest's honor. | sets: met_heirs | adds: obsession+0.5
 beat: 1 | fixed | The Stables | when: flag:met_heirs | guide: Away from the court, at the royal stables, the protagonist meets Tobin Wren, the stable master. He feels the pull but only grows clumsy and kind; Rowan, at the door, keeps his quiet courtesy. The protagonist feels a rare, wary relief. | sets: first_calm
-beat: 1 | fixed | The Ball | when: flag:first_calm, time:evening or night | guide: The ball in the protagonist's honor. Every eye in the great hall is on them. Two nobles are presented: Evander Thorne, the Duke of Ashmere, all courtesy and calculation, and Lady Seraphine Marrow, Isolde's closest friend, who is charming to the protagonist and watches whoever dances with them. | sets: met_nobles | adds: obsession+1, attraction+0.5
-beat: 1 | fixed | The Queen's Entertainment | when: flag:met_nobles, time:evening or night | guide: At an evening gathering before the whole court, Queen Octavia asks the protagonist to perform, sweetly, in a way that cannot be refused: their greatest talent, the one written in their card (a song, a dance, swordplay, music, whatever it is), and she knows exactly what it is. She does it to torment everyone in the room, herself included: every eye is on the protagonist, and the pull grows in all of them at once. Let the performance be beautiful and the silence after it unbearable; show each face. | sets: performed | adds: obsession+1.5, attraction+1
-beat: 1 | fixed | Elowen Falls Ill | when: flag:performed, day>=3 | guide: Elowen wakes with a fever and cannot get up. The protagonist takes her to the court physician, Dorian Lacroix, in his rooms full of books and instruments. He treats her with care, and studies the protagonist with an interest that is not only medical. Elowen will recover, slowly. | sets: met_physician
+beat: 1 | fixed | The Ball | when: flag:first_calm | guide: The ball in the protagonist's honor. Every eye in the great hall is on them. Two nobles are presented: Evander Thorne, the Duke of Ashmere, all courtesy and calculation, and Lady Seraphine Marrow, Isolde's closest friend, who is charming to the protagonist and watches whoever dances with them. | sets: met_nobles | adds: obsession+1, attraction+0.5
+beat: 1 | fixed | The Queen's Entertainment | when: flag:met_nobles | guide: At an evening gathering before the whole court, Queen Octavia asks the protagonist to perform, sweetly, in a way that cannot be refused: their greatest talent, the one written in their card (a song, a dance, swordplay, music, whatever it is), and she knows exactly what it is. She does it to torment everyone in the room, herself included: every eye is on the protagonist, and the pull grows in all of them at once. Let the performance be beautiful and the silence after it unbearable; show each face. | sets: performed | adds: obsession+1.5, attraction+1
+beat: 1 | fixed | Elowen Falls Ill | when: flag:performed | guide: Elowen wakes with a fever and cannot get up. The protagonist takes her to the court physician, Dorian Lacroix, in his rooms full of books and instruments. He treats her with care, and studies the protagonist with an interest that is not only medical. Elowen will recover, slowly. | sets: met_physician
 beat: 1 | fixed | The Gift | when: flag:met_physician | guide: A gift arrives that shows far too much knowledge of the protagonist. The sense of being watched grows. | sets: gift_received
 beat: 1 | bank | An Unwanted Escort | when: any obsession>=2 | guide: Someone insists on accompanying the protagonist everywhere, with a polite excuse that does not hold up.
 beat: 1 | bank | The Stolen Glance | when: met>=3, prob 25 | guide: The protagonist catches someone staring from across a room, and they do not look away.

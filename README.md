@@ -103,6 +103,7 @@ The Config card lists every setting. The most useful:
 - **Touch:** a friendly touch between a character and the protagonist (yours, or the AI's) raises their `touch_stats: affinity|attraction|trust|obsession` by `touch_bonus: 0.3`, once per turn; a sentence with `mood_neg` words makes it rough, and then nothing rises. The count shows as `touched:` in their Notes.
 - `contact: on` enables the touch-consent module (characters may only touch the protagonist when the player writes it).
 - `early_actions: 40` nudges the AI to introduce characters who have not appeared yet during the first 40 actions (off by default, `0`).
+- `bring_in: 8`: when a scene has gone on for 8 turns with only one character, the AI is asked, for two turns, to bring in someone already met who has shared the fewest scenes with the protagonist (and again every 8 turns). Off by default (`0`); it never brings in someone unmet, so an arc that presents the cast keeps its order.
 
 ### Ties between characters
 

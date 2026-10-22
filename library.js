@@ -50,7 +50,7 @@ const LW = (() => {
     },
     s: {
       max_present: 4, max_stats: 3, contact: false, warn_touch: false, inject: "frontMemory",
-      accel_scenes: 40, early_actions: 0, damp_words: "", damp_factor: 0.5,
+      accel_scenes: 40, early_actions: 0, bring_in: 0, damp_words: "", damp_factor: 0.5,
       tension_stat: "affinity", tension_min: 6, tension_rate: 0.5, tension_max: 10, max_pairs: 3,
       skip: "", autostats: false,
       // protagonist: the player character's name; the chronicle always calls them by it (empty: "the protagonist")
@@ -681,6 +681,15 @@ const LW = (() => {
         .sort((a2, b2) => ((L.rel[a2.id] || {}).scenes || 0) - ((L.rel[b2.id] || {}).scenes || 0))
         .slice(0, 2).map((c) => c.first);
       if (quiet.length) add(5, "Soon give " + andList(quiet) + " a moment with the protagonist.");
+    }
+    // bring_in: a scene alone with one character for bring_in turns or more brings in, for two turns, someone already met
+    // who has shared the fewest scenes with the protagonist (never someone unmet: the arc presents them)
+    const alone = ids.filter((id) => X.byId[id] && !isCrowd(X.byId[id])).length <= 1;
+    if (s.bring_in > 0 && alone && W.sc.t >= s.bring_in && W.sc.t % s.bring_in < 2) {
+      const who = X.roster
+        .filter((c) => !ids.includes(c.id) && !isCrowd(c) && ((L.rel[c.id] || {}).scenes || 0) > 0)
+        .sort((a2, b2) => L.rel[a2.id].scenes - L.rel[b2.id].scenes || (L.rel[a2.id].last || 0) - (L.rel[b2.id].last || 0))[0];
+      if (who) add(1, "Bring " + who.first + " into the scene now, with a reason to be there.");
     }
     // style and point of view first, the requests for the top of the reply last: the AI follows what it reads last,
     // and the thought lines must not read as forbidden by "no script lines" or "never narrate what they think"
