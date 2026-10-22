@@ -54,9 +54,12 @@ tension_rate: 1
 # protagonist: Name
 # early game: no nudges to bring in the cast; the arc's first act presents everyone in order (King, Queen, tea, ball, physician)
 early_actions: 0
-# every 3 turns of a scene with one or two characters, whoever has been away longest interrupts, wanting the protagonist's attention
-# (a scene is told to end after scene_len: 6 turns, so this lands in its middle)
-bring_in: 3
+# scenes: setup, complication, climax over scene_len turns; past that the AI is told to end the scene with a jump in time
+# 10 leaves room for banter; lower it for faster scenes
+scene_len: 10
+# every 5 turns of a scene with one or two characters, whoever has been away longest interrupts, wanting the protagonist's attention
+# (halfway through a scene)
+bring_in: 5
 chronicle_stats: obsession|attraction
 # thoughts (all of them listed, defaults included, so they are easy to tune)
 # keep: how many stay in each character's Notes | recent: how many of those the AI gets per character
