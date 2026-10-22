@@ -472,12 +472,12 @@ G.state.lw.w.force = [];
 const plain = turn("I wait.", "\"I am here,\" Mira says.\nMira waves.");
 assert(plain === "\"I am here,\" Mira says.\nMira waves.", "dialogue kept: " + plain);
 
-// bring_in: a long scene alone with Mira brings in someone already met, for two turns, then lets the scene be
+// bring_in: a long scene with Mira brings in whoever was away longest, for two turns, then lets the scene be
 const bringCfg = storyCards.find((c) => c.type === "config"), bringBefore = bringCfg.description;
 bringCfg.description += "\nbring_in: 3";
 run("input", "/scene");
 const asks = [];
-for (let i = 0; i < 6; i++) { turn("I talk with Mira.", "Mira talks with you."); G.info.actionCount++; run("input", "I listen to Mira."); G.info.actionCount--; asks.push(/Bring (?!Mira)\w+ into the scene now/.test(G.state.memory.frontMemory)); }
+for (let i = 0; i < 6; i++) { turn("I talk with Mira.", "Mira talks with you."); G.info.actionCount++; run("input", "I listen to Mira."); G.info.actionCount--; asks.push(/Have (?!Mira|Tobin)\w+ interrupt now/.test(G.state.memory.frontMemory)); }
 assert(asks.join() === "false,false,true,true,false,true", "bring_in nudges after 3 and 6 turns: " + asks.join());
 bringCfg.description = bringBefore;
 

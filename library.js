@@ -682,14 +682,17 @@ const LW = (() => {
         .slice(0, 2).map((c) => c.first);
       if (quiet.length) add(5, "Soon give " + andList(quiet) + " a moment with the protagonist.");
     }
-    // bring_in: a scene alone with one character for bring_in turns or more brings in, for two turns, someone already met
-    // who has shared the fewest scenes with the protagonist (never someone unmet: the arc presents them)
-    const alone = ids.filter((id) => X.byId[id] && !isCrowd(X.byId[id])).length <= 1;
-    if (s.bring_in > 0 && alone && W.sc.t >= s.bring_in && W.sc.t % s.bring_in < 2) {
-      const who = X.roster
+    // bring_in: every bring_in turns of a scene with one or two characters, for two turns, someone already met who has
+    // been away the longest interrupts, wanting the protagonist for themselves (never someone unmet: the arc presents them)
+    const few = ids.filter((id) => X.byId[id] && !isCrowd(X.byId[id])).length <= 2;
+    // the second turn only asks again if the one asked for has not come in yet
+    if (s.bring_in > 0 && few && W.sc.t >= s.bring_in && W.sc.t % s.bring_in < 2) {
+      const again = W.sc.t % s.bring_in === 1 ? X.byId[W.biWho] : null;
+      const who = again ? (ids.includes(again.id) ? null : again) : X.roster
         .filter((c) => !ids.includes(c.id) && !isCrowd(c) && ((L.rel[c.id] || {}).scenes || 0) > 0)
-        .sort((a2, b2) => L.rel[a2.id].scenes - L.rel[b2.id].scenes || (L.rel[a2.id].last || 0) - (L.rel[b2.id].last || 0))[0];
-      if (who) add(1, "Bring " + who.first + " into the scene now, with a reason to be there.");
+        .sort((a2, b2) => (L.rel[a2.id].last || 0) - (L.rel[b2.id].last || 0))[0];
+      if (who) W.biWho = who.id;
+      if (who) add(1, "Have " + who.first + " interrupt now, with a reason to be there and wanting the protagonist's attention; keep the exchange quick.");
     }
     // style and point of view first, the requests for the top of the reply last: the AI follows what it reads last,
     // and the thought lines must not read as forbidden by "no script lines" or "never narrate what they think"
