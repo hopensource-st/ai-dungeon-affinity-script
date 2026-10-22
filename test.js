@@ -459,6 +459,12 @@ turn("I sit with Mira and Tobin.", "{log: The protagonist gave Mira a silver rin
 assert(/^m: [^\n]*gave Mira a silver ring — «Nobody ever gave me anything this fine\.»$/m.test(storyCards[0].description), "Mira's view of the event:\n" + storyCards[0].description);
 assert(/^m: [^\n]*gave Mira a silver ring\.?$/m.test(storyCards[1].description), "Tobin witnessed it:\n" + storyCards[1].description);
 G.state.lw.w.force = [];
+// the same moment told again that day is not a second memory; whoever was in the scene earlier remembers it too
+for (let i = 0; i < 4; i++) turn("I talk with Mira.", "Mira talks with you.");
+turn("I wait.", "{log: Mira hid the cellar key under the protagonist's pillow.}\nMira grins.");
+assert(/^m: [^\n]*cellar key/m.test(storyCards[1].description), "Tobin, seen earlier in the scene, remembers it:\n" + storyCards[1].description);
+turn("I wait.", "{log: Mira wore the silver ring all evening, turning it on her finger.}\nMira smiles.");
+assert((storyCards[0].description.match(/silver ring/g) || []).length === 1, "retold memory not stored twice:\n" + storyCards[0].description);
 
 // the AI drops the braces: the log line and the first-person thought on top are recovered, and leave the story
 run("input", "/think Mira");

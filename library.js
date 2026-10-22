@@ -1150,17 +1150,33 @@ const LW = (() => {
   };
   // every character the entry names keeps it as a memory of their own, and so does everyone in the scene (a witness)
   // when the entry is about people (it names a character or the protagonist)
+  // two memories of the same day that share half their words (plurals and tenses aside) are the same moment told twice
+  // ponytail: word overlap, so a retelling with other words still gets through
+  // (the words that carry meaning: no names, no "protagonist", no short or common words)
+  const memWords = (X, t) => new Set([...cues(X, t.replace(/^\([^)]*\) /, "").replace(/ — «[^»]*»$/, ""))].filter((w) => w !== "protagonist").map((w) => w.replace(/(?:ing|ed|es|s)$/, "")));
+  const memSame = (X, a, b) => {
+    const da = (a.match(/^\(([^)]*)\)/) || [])[1];
+    if (!da || da !== (b.match(/^\(([^)]*)\)/) || [])[1]) return false;
+    const A = memWords(X, a), B = memWords(X, b);
+    let n = 0;
+    for (const w of A) if (B.has(w)) n++;
+    return !!A.size && !!B.size && n / Math.min(A.size, B.size) >= 0.5;
+  };
   const remember = (X, m) => {
     const L = S(), hero = String(X.cfg.s.protagonist || "").trim();
     const about = X.roster.some((c) => lastPos(c, m) >= 0) || PROTAG.test(m) || (!!hero && new RegExp("\\b" + esc(hero) + "\\b", "i").test(m));
     L.memNow = L.memNow || {};
     for (const ch of X.roster) {
       const r = L.rel[ch.id];
-      if (!r || isCrowd(ch) || (lastPos(ch, m) < 0 && !(about && (L.present || []).includes(ch.id)))) continue;
-      L.memNow[ch.id] = m;                                         // this turn's memory: a thought now becomes their view of it
+      // witnesses: whoever is here now, and whoever was seen since the last memory (the scene it sums up)
+      if (!r || isCrowd(ch) || (lastPos(ch, m) < 0 && !(about && ((L.present || []).includes(ch.id) || (L.w.seenMem || []).includes(ch.id))))) continue;
       // a memory that says (almost) the same as an older one replaces it, and keeps its recall count
       const mr = r.mr || (r.mr = {}), bare = (x) => x.replace(/^\([^)]*\) /, "");
       const same = (r.mem || []).filter((o) => o === m || thSame(bare(o), bare(m)));
+      // the same moment told with other words the same day: the first telling stays (it may carry their view of it)
+      const twin = !same.length && (r.mem || []).find((o) => memSame(X, o, m));
+      if (twin) { L.memNow[ch.id] = twin; continue; }
+      L.memNow[ch.id] = m;                                         // this turn's memory: a thought now becomes their view of it
       for (const o of same) { if (o !== m) mr[m] = Math.max(mr[m] || 0, mr[o] || 0); if (o !== m) delete mr[o]; }
       r.mem = (r.mem || []).filter((o) => !same.includes(o)).concat(m);
       // full: the memory recalled least often goes (the oldest of those), never the new one
@@ -2293,6 +2309,9 @@ const LW = (() => {
         persist(X, L, f.ch);
       }
     }
+    // who was seen since the last memory: the next one is theirs too (a scene's summary reaches everyone who was in it)
+    const seenNow = ids.filter((id) => !isCrowd(X.byId[id]));
+    W.seenMem = Object.keys(L.memNow || {}).length ? seenNow : [...new Set((W.seenMem || []).concat(seenNow))];
     L.memNow = {};
 
     // pairs sharing a scene: rivals for the protagonist, a quarrel or a kind moment between them, a tie drawn when they first meet

@@ -73,6 +73,8 @@ thoughts_interval: 4
 thoughts_max: 1
 thoughts_words: 20
 thoughts_show: off
+# a summary per scene (on a jump in time or /scene); a scene that runs long adds one every chronicle_every turns
+chronicle_every: 20
 # memories: chronicle entries that name a character stay in their Notes (m: lines)
 # keep: how many per character | recent: how many the AI gets | context: from how many characters | recent 0 turns it off
 memories_keep: 8
